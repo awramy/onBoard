@@ -1,0 +1,172 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique @db.VarChar(255)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  username     String   @db.VarChar(100)
+  fullScore    Int      @default(0) @map("full_score")
+  league       String   @default("bronze") @db.VarChar(50)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+
+  sessions         InterviewSession[]
+  questionProgress UserQuestionProgress[]
+  topicProgress    UserTopicProgress[]
+
+  @@map("user")
+}
+
+model Technology {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique @db.VarChar(100)
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  levels TechnologyLevel[]
+
+  @@map("technology")
+}
+
+model TechnologyLevel {
+  id           String   @id @default(uuid()) @db.Uuid
+  technologyId String   @map("technology_id") @db.Uuid
+  difficulty   String   @db.VarChar(20)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  technology Technology         @relation(fields: [technologyId], references: [id], onDelete: Cascade)
+  topics     TechnologyLevelTopic[]
+  sessions   InterviewSession[]
+
+  @@unique([technologyId, difficulty])
+  @@map("technology_level")
+}
+
+model Topic {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @db.VarChar(200)
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  technologyLevels TechnologyLevelTopic[]
+  questions        Question[]
+  userProgress     UserTopicProgress[]
+
+  @@map("topic")
+}
+
+model TechnologyLevelTopic {
+  technologyLevelId String @map("technology_level_id") @db.Uuid
+  topicId           String @map("topic_id") @db.Uuid
+
+  technologyLevel TechnologyLevel @relation(fields: [technologyLevelId], references: [id], onDelete: Cascade)
+  topic           Topic           @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@id([technologyLevelId, topicId])
+  @@map("technology_level_topic")
+}
+
+model Question {
+  id          String   @id @default(uuid()) @db.Uuid
+  topicId     String   @map("topic_id") @db.Uuid
+  text        String   @db.Text
+  type        String   @default("theory") @db.VarChar(20)
+  difficulty  Int
+  explanation String?  @db.Text
+  isDivide    Boolean? @map("is_devide")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  topic            Topic                      @relation(fields: [topicId], references: [id], onDelete: Restrict)
+  sessionQuestions InterviewSessionQuestion[]
+  userProgress     UserQuestionProgress[]
+
+  @@map("question")
+}
+
+model InterviewSession {
+  id                String    @id @default(uuid()) @db.Uuid
+  userId            String    @map("user_id") @db.Uuid
+  technologyLevelId String    @map("technology_level_id") @db.Uuid
+  config            Json      @default("{}")
+  status            String    @default("planned") @db.VarChar(20)
+  totalQuestions    Int?      @map("total_questions")
+  currentOrder      Int       @default(0) @map("current_order")
+  startedAt         DateTime? @map("started_at")
+  finishedAt        DateTime? @map("finished_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+
+  user            User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  technologyLevel TechnologyLevel            @relation(fields: [technologyLevelId], references: [id], onDelete: Restrict)
+  questions       InterviewSessionQuestion[]
+
+  @@map("interview_session")
+}
+
+model InterviewSessionQuestion {
+  id           String   @id @default(uuid()) @db.Uuid
+  sessionId    String   @map("session_id") @db.Uuid
+  questionId   String?  @map("question_id") @db.Uuid
+  questionText String   @map("question_text") @db.Text
+  difficulty   Int
+  order        Int
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  session  InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  question Question?        @relation(fields: [questionId], references: [id], onDelete: SetNull)
+  answers  InterviewAnswer[]
+
+  @@unique([sessionId, order])
+  @@map("interview_session_question")
+}
+
+model InterviewAnswer {
+  id                String   @id @default(uuid()) @db.Uuid
+  sessionQuestionId String   @map("session_question_id") @db.Uuid
+  answerText        String   @map("answer_text") @db.Text
+  aiFeedback        Json     @map("ai_feedback")
+  score             Int
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  sessionQuestion InterviewSessionQuestion @relation(fields: [sessionQuestionId], references: [id], onDelete: Cascade)
+
+  @@map("interview_answer")
+}
+
+model UserQuestionProgress {
+  id             String    @id @default(uuid()) @db.Uuid
+  userId         String    @map("user_id") @db.Uuid
+  questionId     String    @map("question_id") @db.Uuid
+  attemptsCount  Int       @default(0) @map("attempts_count")
+  totalScore     Int       @default(0) @map("total_score")
+  lastScore      Int?      @map("last_score")
+  lastAnsweredAt DateTime? @map("last_answered_at")
+  mastery        Float     @default(0.0)
+  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, questionId])
+  @@map("user_question_progress")
+}
+
+model UserTopicProgress {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  topicId     String   @map("topic_id") @db.Uuid
+  score       Int      @default(0)
+  lastUpdated DateTime @default(now()) @map("last_updated")
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topic Topic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, topicId])
+  @@map("user_topic_progress")
+}
