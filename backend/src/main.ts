@@ -7,8 +7,11 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // Выставляем безопасные https заголовки ответов
   app.use(helmet());
+  // Разрешаем ходить с других источников в наше api (ограничить список для prod)
   app.enableCors();
+  // Пайп, валидирующий входящие данные по dto (whitelist - отбрасываем из вход. данных поля которых нет в dto, transform - авто приведение типов (например строки в число по dto))
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
   const config = new DocumentBuilder()

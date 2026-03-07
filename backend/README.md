@@ -1,98 +1,139 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# onBoard Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Бэкенд сервиса **onBoard** — AI-powered подготовка к собеседованиям. REST API на NestJS 11, база данных PostgreSQL через Prisma 7, аутентификация по JWT.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-## Description
+## Стек
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+| Категория   | Технология |
+|------------|------------|
+| Runtime    | Node.js, ESM (`"type": "module"`) |
+| Framework  | NestJS 11 |
+| ORM / DB   | Prisma 7, PostgreSQL 16, драйвер `@prisma/adapter-pg` |
+| Auth       | JWT (passport-jwt), bcrypt |
+| Документация API | Swagger (OpenAPI) |
+| Валидация  | class-validator, class-transformer |
+| Безопасность | Helmet, Throttler (rate limit) |
 
-## Project setup
+---
 
-```bash
-$ pnpm install
+## Структура проекта
+
+```
+backend/
+├── prisma/
+│   ├── schema.prisma    # Модели БД и миграции
+│   └── seed.ts          # Сиды: технологии, темы, вопросы
+├── src/
+│   ├── main.ts          # Точка входа, CORS, Helmet, Swagger, ValidationPipe
+│   ├── app.module.ts    # Корневой модуль
+│   ├── app.controller.ts # Health check
+│   ├── auth/            # Регистрация и вход, JWT
+│   ├── technologies/    # Каталог технологий и уровней
+│   ├── sessions/        # Сессии собеседований
+│   ├── prisma/          # Глобальный PrismaService (подключение к БД)
+│   └── common/          # Guards (JWT), декораторы (CurrentUser)
+└── test/                # E2E-тесты
 ```
 
-## Compile and run the project
+**Модули:**
 
-```bash
-# development
-$ pnpm run start
+- **AuthModule** — регистрация, логин, выдача JWT.
+- **TechnologiesModule** — чтение технологий и уровней (с темами и вопросами).
+- **SessionsModule** — создание и просмотр сессий собеседований (по пользователю).
+- **PrismaModule** — глобальный провайдер доступа к БД.
 
-# watch mode
-$ pnpm run start:dev
+---
 
-# production mode
-$ pnpm run start:prod
-```
+## Функциональность
 
-## Run tests
+### 1. Аутентификация
 
-```bash
-# unit tests
-$ pnpm run test
+- **POST `/api/auth/register`** — регистрация (email, password, username). Пароль хэшируется (bcrypt), возвращается JWT и данные пользователя.
+- **POST `/api/auth/login`** — вход по email и паролю; в ответе — JWT и профиль.
 
-# e2e tests
-$ pnpm run test:e2e
+Защищённые маршруты требуют заголовок `Authorization: Bearer <token>`.
 
-# test coverage
-$ pnpm run test:cov
-```
+### 2. Технологии
 
-## Deployment
+- **GET `/api/technologies`** — список технологий с уровнями сложности (только для авторизованных).
+- **GET `/api/technologies/:id`** — одна технология с уровнями, темами и связями (только для авторизованных).
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+Используется для выбора направления подготовки (например, JavaScript, React) и уровня (junior/middle/senior).
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### 3. Сессии собеседований
 
-```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
-```
+- **POST `/api/sessions`** — создать сессию: привязка к пользователю, к уровню технологии (`technologyLevelId`) и опциональному `config` (формат, количество вопросов и т.п.).
+- **GET `/api/sessions`** — список сессий текущего пользователя.
+- **GET `/api/sessions/:id`** — детали сессии (вопросы, ответы, уровень, технология).
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+Все маршруты сессий доступны только авторизованному пользователю; выборка по `userId` из JWT.
 
-## Resources
+### 4. Служебные
 
-Check out a few resources that may come in handy when working with NestJS:
+- **GET `/api/health`** — проверка живости сервиса (`status`, `timestamp`).
+- **GET `/api/docs`** — интерактивная Swagger-документация.
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+---
 
-## Support
+## Модель данных (кратко)
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+- **User** — пользователь (email, username, passwordHash, league, fullScore).
+- **Technology** — технология (name, description).
+- **TechnologyLevel** — уровень сложности у технологии (например, junior/middle/senior).
+- **Topic** — тема (привязана к уровням через **TechnologyLevelTopic**).
+- **Question** — вопрос по теме (text, type, difficulty, explanation).
+- **InterviewSession** — сессия собеседования (user, technologyLevel, config, status, totalQuestions, даты).
+- **InterviewSessionQuestion** — вопрос в рамках сессии (порядок, текст, сложность).
+- **InterviewAnswer** — ответ пользователя (текст, AI feedback, score).
+- **UserQuestionProgress** / **UserTopicProgress** — прогресс по вопросам и темам (для будущего расширения).
 
-## Stay in touch
+---
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+## Запуск и окружение
 
-## License
+### Требования
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+- Node.js (рекомендуется LTS)
+- PostgreSQL 16 (например, через `docker compose up -d postgres` из корня репозитория)
+- Файл `backend/.env` (образец: `backend/.env.example`)
+
+### Переменные окружения
+
+| Переменная | Обязательная | Описание | Пример (локальная разработка) |
+|------------|---------------|----------|--------------------------------|
+| `DATABASE_URL` | да | Строка подключения PostgreSQL для Prisma (миграции, seed, runtime) | `postgresql://onboard:onboard_secret@localhost:5432/onboard` |
+| `JWT_SECRET` | да | Секрет для подписи JWT | длинная случайная строка |
+| `JWT_EXPIRATION` | нет | Срок жизни access token (секунды), по умолчанию 3600 | `3600` |
+| `PORT` | нет | Порт HTTP-сервера, по умолчанию 3000 | `3000` |
+
+Для локальной разработки при запущенном `docker compose` из корня репо используйте `DATABASE_URL` как в таблице (логин/пароль/БД из `docker-compose.yml`).
+
+### Команды (из каталога `backend/`)
+
+| Команда | Описание |
+|--------|----------|
+| `pnpm install` | Установка зависимостей |
+| `npx prisma generate` | Генерация Prisma Client |
+| `npx prisma migrate deploy` | Применение миграций (БД должна быть запущена) |
+| `npx tsx prisma/seed.ts` | Заполнение технологий, тем и вопросов |
+| `pnpm run start:dev` | Запуск в режиме разработки (watch) |
+| `pnpm run build` | Сборка в `dist/` |
+| `pnpm run start:prod` | Запуск продакшн-сборки (`node dist/main.js`) |
+| `pnpm run test` | Unit-тесты (Jest) |
+| `pnpm run test:e2e` | E2E-тесты |
+| `pnpm run lint` | Линт (ESLint) |
+
+### Документация API
+
+После запуска сервера: **http://localhost:3000/api/docs** (Swagger UI).
+
+---
+
+## Безопасность и лимиты
+
+- Глобальная валидация входящих тел запросов (`ValidationPipe`, whitelist).
+- Helmet для заголовков HTTP.
+- Throttler: лимит запросов (например, 100 запросов за 60 секунд на приложение).
+- Защищённые маршруты проверяют JWT через `JwtAuthGuard` и стратегию passport-jwt.

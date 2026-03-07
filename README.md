@@ -1,4 +1,5 @@
 # onBoard
+
 Сервис на основе AI, предоставляющий возможности для обучения / подготовки к собеседованиям через сессии тестовых собеседований, с сохранением прогресса и отслеживанием изученных тем. 
 Сервис предоставляет удобный интерфейс, в котором пользователь может настроить параметры:
 
@@ -16,182 +17,228 @@
 ## 1. Сущности базы данных
 
 ### 1.1. `user` – пользователи
-| Поле | Тип | Ограничения | Описание |
-|------|-----|-------------|----------|
-| id | UUID | PRIMARY KEY | Уникальный идентификатор пользователя |
-| email | VARCHAR(255) | UNIQUE, NOT NULL | Email пользователя |
-| password_hash | VARCHAR(255) | NOT NULL | Хеш пароля |
-| username | VARCHAR(100) | NOT NULL | Имя пользователя (никнейм) |
-| full_score | INTEGER | DEFAULT 0 | Общий накопленный балл |
-| league | VARCHAR(50) | DEFAULT 'bronze' | Лига пользователя |
-| created_at | TIMESTAMP | DEFAULT NOW() | Дата регистрации |
-| updated_at | TIMESTAMP | DEFAULT NOW() | Дата последнего обновления |
+
+
+| Поле          | Тип          | Ограничения      | Описание                              |
+| ------------- | ------------ | ---------------- | ------------------------------------- |
+| id            | UUID         | PRIMARY KEY      | Уникальный идентификатор пользователя |
+| email         | VARCHAR(255) | UNIQUE, NOT NULL | Email пользователя                    |
+| password_hash | VARCHAR(255) | NOT NULL         | Хеш пароля                            |
+| username      | VARCHAR(100) | NOT NULL         | Имя пользователя (никнейм)            |
+| full_score    | INTEGER      | DEFAULT 0        | Общий накопленный балл                |
+| league        | VARCHAR(50)  | DEFAULT 'bronze' | Лига пользователя                     |
+| created_at    | TIMESTAMP    | DEFAULT NOW()    | Дата регистрации                      |
+| updated_at    | TIMESTAMP    | DEFAULT NOW()    | Дата последнего обновления            |
+
 
 ### 1.2. `technology` – технологии
-| Поле | Тип | Ограничения | Описание |
-|------|-----|-------------|----------|
-| id | UUID | PRIMARY KEY | Уникальный идентификатор технологии |
-| name | VARCHAR(100) | UNIQUE, NOT NULL | Название технологии |
-| description | TEXT | | Описание технологии |
-| created_at | TIMESTAMP | DEFAULT NOW() | Дата добавления |
+
+
+| Поле        | Тип          | Ограничения      | Описание                            |
+| ----------- | ------------ | ---------------- | ----------------------------------- |
+| id          | UUID         | PRIMARY KEY      | Уникальный идентификатор технологии |
+| name        | VARCHAR(100) | UNIQUE, NOT NULL | Название технологии                 |
+| description | JSONB        |                  | Описание технологии (i18n)          |
+| created_at  | TIMESTAMP    | DEFAULT NOW()    | Дата добавления                     |
+
 
 ### 1.3. `technology_level` – уровни технологии
-| Поле | Тип | Ограничения | Описание |
-|------|-----|-------------|----------|
-| id | UUID | PRIMARY KEY | Уникальный идентификатор уровня |
-| technology_id | UUID | FOREIGN KEY REFERENCES technology(id) ON DELETE CASCADE | Ссылка на технологию |
-| difficulty | VARCHAR(20) | NOT NULL | Уровень сложности ('junior', 'middle', 'senior') |
-| created_at | TIMESTAMP | DEFAULT NOW() | Дата создания |
-| *UNIQUE* | (technology_id, difficulty) | | Уникальность пары технология-уровень |
+
+
+| Поле          | Тип                         | Ограничения                                             | Описание                                         |
+| ------------- | --------------------------- | ------------------------------------------------------- | ------------------------------------------------ |
+| id            | UUID                        | PRIMARY KEY                                             | Уникальный идентификатор уровня                  |
+| technology_id | UUID                        | FOREIGN KEY REFERENCES technology(id) ON DELETE CASCADE | Ссылка на технологию                             |
+| difficulty    | ENUM(Difficulty)            | NOT NULL                                                | Уровень сложности ('junior', 'middle', 'senior') |
+| created_at    | TIMESTAMP                   | DEFAULT NOW()                                           | Дата создания                                    |
+| *UNIQUE*      | (technology_id, difficulty) |                                                         | Уникальность пары технология-уровень             |
+
 
 ### 1.4. `topic` – темы
-| Поле | Тип | Ограничения | Описание |
-|------|-----|-------------|----------|
-| id | UUID | PRIMARY KEY | Уникальный идентификатор темы |
-| name | VARCHAR(200) | NOT NULL | Название темы |
-| description | TEXT | | Описание темы |
-| created_at | TIMESTAMP | DEFAULT NOW() | Дата создания |
+
+
+| Поле        | Тип          | Ограничения   | Описание                      |
+| ----------- | ------------ | ------------- | ----------------------------- |
+| id          | UUID         | PRIMARY KEY   | Уникальный идентификатор темы |
+| name        | JSONB        | NOT NULL      | Название темы (i18n)          |
+| description | JSONB        |               | Описание темы (i18n)          |
+| created_at  | TIMESTAMP    | DEFAULT NOW() | Дата создания                 |
+
 
 ### 1.5. `technology_level_topic` – связь уровня технологии с темами
-| Поле | Тип | Ограничения | Описание |
-|------|-----|-------------|----------|
-| technology_level_id | UUID | FOREIGN KEY REFERENCES technology_level(id) ON DELETE CASCADE | Ссылка на уровень технологии |
-| topic_id | UUID | FOREIGN KEY REFERENCES topic(id) ON DELETE CASCADE | Ссылка на тему |
-| *PRIMARY KEY* | (technology_level_id, topic_id) | | Составной первичный ключ |
+
+
+| Поле                | Тип                             | Ограничения                                                   | Описание                     |
+| ------------------- | ------------------------------- | ------------------------------------------------------------- | ---------------------------- |
+| technology_level_id | UUID                            | FOREIGN KEY REFERENCES technology_level(id) ON DELETE CASCADE | Ссылка на уровень технологии |
+| topic_id            | UUID                            | FOREIGN KEY REFERENCES topic(id) ON DELETE CASCADE            | Ссылка на тему               |
+| *PRIMARY KEY*       | (technology_level_id, topic_id) |                                                               | Составной первичный ключ     |
+
 
 ### 1.6. `question` – вопросы
-| Поле | Тип | Ограничения | Описание |
-|------|-----|-------------|----------|
-| id | UUID | PRIMARY KEY | Уникальный идентификатор вопроса |
-| topic_id | UUID | FOREIGN KEY REFERENCES topic(id) ON DELETE RESTRICT | Ссылка на тему |
-| text | TEXT | NOT NULL | Текст вопроса |
-| type | VARCHAR(20) | NOT NULL DEFAULT 'theory' | Тип вопроса ('theory', 'practice') |
-| difficulty | INTEGER | NOT NULL CHECK (difficulty BETWEEN 1 AND 50) | Сложность вопроса |
-| explanation | TEXT | | Пояснение к правильному ответу |
-| is_devide | BOOLEAN | | Является ли прогресс по вопросу разделяемым (должен быть закрыт одним ответом, не может быть закрыт на часть) |
-| created_at | TIMESTAMP | DEFAULT NOW() | Дата создания |
-| updated_at | TIMESTAMP | DEFAULT NOW() | Дата последнего обновления |
+
+
+| Поле        | Тип         | Ограничения                                         | Описание                                                                                                      |
+| ----------- | ----------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| id          | UUID        | PRIMARY KEY                                         | Уникальный идентификатор вопроса                                                                              |
+| topic_id    | UUID        | FOREIGN KEY REFERENCES topic(id) ON DELETE RESTRICT | Ссылка на тему                                                                                                |
+| text        | JSONB       | NOT NULL                                            | Текст вопроса (i18n)                                                                                          |
+| type        | VARCHAR(20) | NOT NULL DEFAULT 'theory'                           | Тип вопроса ('theory', 'practice')                                                                            |
+| difficulty  | INTEGER     | NOT NULL CHECK (difficulty BETWEEN 1 AND 50)        | Сложность вопроса                                                                                             |
+| explanation | JSONB       |                                                     | Пояснение к правильному ответу (i18n)                                                                         |
+| is_devide   | BOOLEAN     |                                                     | Является ли прогресс по вопросу разделяемым (должен быть закрыт одним ответом, не может быть закрыт на часть) |
+| created_at  | TIMESTAMP   | DEFAULT NOW()                                       | Дата создания                                                                                                 |
+| updated_at  | TIMESTAMP   | DEFAULT NOW()                                       | Дата последнего обновления                                                                                    |
+
 
 ### 1.7. `interview_session` – сессии интервью
-| Поле | Тип | Ограничения | Описание |
-|------|-----|-------------|----------|
-| id | UUID | PRIMARY KEY | Уникальный идентификатор сессии |
-| user_id | UUID | FOREIGN KEY REFERENCES user(id) ON DELETE CASCADE | Ссылка на пользователя |
-| technology_level_id | UUID | FOREIGN KEY REFERENCES technology_level(id) ON DELETE RESTRICT | Выбранный уровень технологии |
-| config | JSONB | NOT NULL DEFAULT '{}' | Настройки сессии (формат, количество вопросов и т.д.) |
-| status | VARCHAR(20) | NOT NULL DEFAULT 'planned' | Статус сессии ('planned', 'in_progress', 'completed', 'abandoned') |
-| total_questions | INTEGER | | Количество вопросов в сессии |
-| current_order | INTEGER | DEFAULT 0 | Текущий номер вопроса |
-| started_at | TIMESTAMP | | Время начала |
-| finished_at | TIMESTAMP | | Время завершения |
-| created_at | TIMESTAMP | DEFAULT NOW() | Дата создания |
+
+
+| Поле                | Тип         | Ограничения                                                    | Описание                                                           |
+| ------------------- | ----------- | -------------------------------------------------------------- | ------------------------------------------------------------------ |
+| id                  | UUID        | PRIMARY KEY                                                    | Уникальный идентификатор сессии                                    |
+| user_id             | UUID        | FOREIGN KEY REFERENCES user(id) ON DELETE CASCADE              | Ссылка на пользователя                                             |
+| technology_level_id | UUID        | FOREIGN KEY REFERENCES technology_level(id) ON DELETE RESTRICT | Выбранный уровень технологии                                       |
+| config              | JSONB       | NOT NULL DEFAULT '{}'                                          | Настройки сессии (формат, количество вопросов и т.д.)              |
+| status              | VARCHAR(20) | NOT NULL DEFAULT 'planned'                                     | Статус сессии ('planned', 'in_progress', 'completed', 'abandoned') |
+| total_questions     | INTEGER     |                                                                | Количество вопросов в сессии                                       |
+| current_order       | INTEGER     | DEFAULT 0                                                      | Текущий номер вопроса                                              |
+| started_at          | TIMESTAMP   |                                                                | Время начала                                                       |
+| finished_at         | TIMESTAMP   |                                                                | Время завершения                                                   |
+| created_at          | TIMESTAMP   | DEFAULT NOW()                                                  | Дата создания                                                      |
+
 
 ### 1.8. `interview_session_question` – вопросы, заданные в сессии
-| Поле | Тип | Ограничения | Описание |
-|------|-----|-------------|----------|
-| id | UUID | PRIMARY KEY | Уникальный идентификатор записи |
-| session_id | UUID | FOREIGN KEY REFERENCES interview_session(id) ON DELETE CASCADE | Ссылка на сессию |
-| question_id | UUID | FOREIGN KEY REFERENCES question(id) ON DELETE SET NULL | Ссылка на оригинальный вопрос |
-| question_text | TEXT | NOT NULL | Текст вопроса на момент сессии |
-| difficulty | INTEGER | NOT NULL | Сложность на момент сессии |
-| order | INTEGER | NOT NULL | Порядковый номер в сессии |
-| created_at | TIMESTAMP | DEFAULT NOW() | Дата создания |
-| *UNIQUE* | (session_id, order) | | Уникальность порядка вопросов в сессии |
+
+
+| Поле          | Тип                 | Ограничения                                                    | Описание                               |
+| ------------- | ------------------- | -------------------------------------------------------------- | -------------------------------------- |
+| id            | UUID                | PRIMARY KEY                                                    | Уникальный идентификатор записи        |
+| session_id    | UUID                | FOREIGN KEY REFERENCES interview_session(id) ON DELETE CASCADE | Ссылка на сессию                       |
+| question_id   | UUID                | FOREIGN KEY REFERENCES question(id) ON DELETE SET NULL         | Ссылка на оригинальный вопрос          |
+| question_text | TEXT                | NOT NULL                                                       | Текст вопроса на момент сессии         |
+| difficulty    | INTEGER             | NOT NULL                                                       | Сложность на момент сессии             |
+| order         | INTEGER             | NOT NULL                                                       | Порядковый номер в сессии              |
+| created_at    | TIMESTAMP           | DEFAULT NOW()                                                  | Дата создания                          |
+| *UNIQUE*      | (session_id, order) |                                                                | Уникальность порядка вопросов в сессии |
+
 
 ### 1.9. `interview_answer` – ответы пользователя
-| Поле | Тип | Ограничения | Описание |
-|------|-----|-------------|----------|
-| id | UUID | PRIMARY KEY | Уникальный идентификатор ответа |
-| session_question_id | UUID | FOREIGN KEY REFERENCES interview_session_question(id) ON DELETE CASCADE | Ссылка на вопрос сессии |
-| answer_text | TEXT | NOT NULL | Текст ответа пользователя |
-| ai_feedback | JSONB | NOT NULL | Полный ответ AI (оценка, комментарии, рекомендации) |
-| score | INTEGER | NOT NULL CHECK (score BETWEEN 0 AND 100) | Балл за ответ |
-| created_at | TIMESTAMP | DEFAULT NOW() | Время ответа |
+
+
+| Поле                | Тип       | Ограничения                                                             | Описание                                            |
+| ------------------- | --------- | ----------------------------------------------------------------------- | --------------------------------------------------- |
+| id                  | UUID      | PRIMARY KEY                                                             | Уникальный идентификатор ответа                     |
+| session_question_id | UUID      | FOREIGN KEY REFERENCES interview_session_question(id) ON DELETE CASCADE | Ссылка на вопрос сессии                             |
+| answer_text         | TEXT      | NOT NULL                                                                | Текст ответа пользователя                           |
+| ai_feedback         | JSONB     | NOT NULL                                                                | Полный ответ AI (оценка, комментарии, рекомендации) |
+| score               | INTEGER   | NOT NULL CHECK (score BETWEEN 0 AND 100)                                | Балл за ответ                                       |
+| created_at          | TIMESTAMP | DEFAULT NOW()                                                           | Время ответа                                        |
+
 
 ### 1.10. `user_question_progress` – прогресс по вопросам
-| Поле | Тип | Ограничения | Описание |
-|------|-----|-------------|----------|
-| id | UUID | PRIMARY KEY | Уникальный идентификатор записи |
-| user_id | UUID | FOREIGN KEY REFERENCES user(id) ON DELETE CASCADE | Ссылка на пользователя |
-| question_id | UUID | FOREIGN KEY REFERENCES question(id) ON DELETE CASCADE | Ссылка на вопрос |
-| attempts_count | INTEGER | NOT NULL DEFAULT 0 | Количество попыток ответа |
-| total_score | INTEGER | NOT NULL DEFAULT 0 | Сумма баллов за все попытки |
-| last_score | INTEGER | | Последний полученный балл |
-| last_answered_at | TIMESTAMP | | Время последнего ответа |
-| mastery | FLOAT | DEFAULT 0.0 | Уровень освоения (0-1) |
-| updated_at | TIMESTAMP | DEFAULT NOW() | Дата последнего обновления |
-| *UNIQUE* | (user_id, question_id) | | Уникальность пары пользователь-вопрос |
+
+
+| Поле             | Тип                    | Ограничения                                           | Описание                              |
+| ---------------- | ---------------------- | ----------------------------------------------------- | ------------------------------------- |
+| id               | UUID                   | PRIMARY KEY                                           | Уникальный идентификатор записи       |
+| user_id          | UUID                   | FOREIGN KEY REFERENCES user(id) ON DELETE CASCADE     | Ссылка на пользователя                |
+| question_id      | UUID                   | FOREIGN KEY REFERENCES question(id) ON DELETE CASCADE | Ссылка на вопрос                      |
+| attempts_count   | INTEGER                | NOT NULL DEFAULT 0                                    | Количество попыток ответа             |
+| total_score      | INTEGER                | NOT NULL DEFAULT 0                                    | Сумма баллов за все попытки           |
+| last_score       | INTEGER                |                                                       | Последний полученный балл             |
+| last_answered_at | TIMESTAMP              |                                                       | Время последнего ответа               |
+| mastery          | FLOAT                  | DEFAULT 0.0                                           | Уровень освоения (0-1)                |
+| updated_at       | TIMESTAMP              | DEFAULT NOW()                                         | Дата последнего обновления            |
+| *UNIQUE*         | (user_id, question_id) |                                                       | Уникальность пары пользователь-вопрос |
+
 
 ### 1.11. `user_topic_progress` – прогресс по темам
-| Поле | Тип | Ограничения | Описание |
-|------|-----|-------------|----------|
-| id | UUID | PRIMARY KEY | Уникальный идентификатор записи |
-| user_id | UUID | FOREIGN KEY REFERENCES user(id) ON DELETE CASCADE | Ссылка на пользователя |
-| topic_id | UUID | FOREIGN KEY REFERENCES topic(id) ON DELETE CASCADE | Ссылка на тему |
-| score | INTEGER | NOT NULL DEFAULT 0 | Агрегированный балл по теме |
-| last_updated | TIMESTAMP | DEFAULT NOW() | Время последнего обновления |
-| *UNIQUE* | (user_id, topic_id) | | Уникальность пары пользователь-тема |
+
+
+| Поле         | Тип                 | Ограничения                                        | Описание                            |
+| ------------ | ------------------- | -------------------------------------------------- | ----------------------------------- |
+| id           | UUID                | PRIMARY KEY                                        | Уникальный идентификатор записи     |
+| user_id      | UUID                | FOREIGN KEY REFERENCES user(id) ON DELETE CASCADE  | Ссылка на пользователя              |
+| topic_id     | UUID                | FOREIGN KEY REFERENCES topic(id) ON DELETE CASCADE | Ссылка на тему                      |
+| score        | INTEGER             | NOT NULL DEFAULT 0                                 | Агрегированный балл по теме         |
+| last_updated | TIMESTAMP           | DEFAULT NOW()                                      | Время последнего обновления         |
+| *UNIQUE*     | (user_id, topic_id) |                                                    | Уникальность пары пользователь-тема |
+
 
 ---
 
 ## 2. Связи между сущностями
 
 ### 2.1. `technology` – `technology_level` (1:N)
+
 - **Описание**: Одна технология может иметь несколько уровней сложности (junior, middle, senior).
 - **Целостность**: `ON DELETE CASCADE` – при удалении технологии удаляются все её уровни.
 - **Пример**: Технология "JavaScript" имеет уровни "junior" и "middle".
 
 ### 2.2. `technology_level` – `technology_level_topic` (1:N)
+
 - **Описание**: Один уровень технологии связан с несколькими темами через связующую таблицу.
 - **Целостность**: `ON DELETE CASCADE` – при удалении уровня удаляются все его связи с темами.
 
 ### 2.3. `topic` – `technology_level_topic` (1:N)
+
 - **Описание**: Одна тема может относиться к нескольким уровням разных технологий.
 - **Целостность**: `ON DELETE CASCADE` – при удалении темы удаляются все связи с уровнями.
 - **Пример**: Тема "Closures" может быть в "JavaScript junior" и "JavaScript middle".
 
 ### 2.4. `topic` – `question` (1:N)
+
 - **Описание**: Одна тема содержит множество вопросов.
 - **Целостность**: `ON DELETE RESTRICT` – нельзя удалить тему, если у неё есть вопросы (защита от потери данных).
 - **Пример**: Тема "Функции" содержит вопросы о declaration, expression, arrow functions.
 
 ### 2.5. `user` – `interview_session` (1:N)
+
 - **Описание**: Один пользователь может проходить множество интервью.
 - **Целостность**: `ON DELETE CASCADE` – при удалении пользователя удаляются все его сессии.
 - **Пример**: Пользователь проходит 5 тренировочных сессий по JavaScript.
 
 ### 2.6. `technology_level` – `interview_session` (1:N)
+
 - **Описание**: Один уровень технологии может использоваться во многих сессиях.
 - **Целостность**: `ON DELETE RESTRICT` – нельзя удалить уровень, если есть связанные сессии (сохраняем историю).
 
 ### 2.7. `interview_session` – `interview_session_question` (1:N)
+
 - **Описание**: Одна сессия содержит множество заданных вопросов.
 - **Целостность**: `ON DELETE CASCADE` – при удалении сессии удаляются все вопросы сессии.
 - **Пример**: Сессия из 10 вопросов создаёт 10 записей в этой таблице.
 
 ### 2.8. `question` – `interview_session_question` (1:N)
+
 - **Описание**: Один оригинальный вопрос может быть задан во многих сессиях.
 - **Целостность**: `ON DELETE SET NULL` – если вопрос удалён, в истории остаётся только его текст.
 - **Важно**: Копирование текста вопроса обеспечивает историческую точность даже после изменений оригинала.
 
 ### 2.9. `interview_session_question` – `interview_answer` (1:N)
+
 - **Описание**: На один вопрос сессии может быть несколько ответов (например, при повторных попытках).
 - **Целостность**: `ON DELETE CASCADE` – при удалении вопроса удаляются все ответы на него.
 - **Пример**: Пользователь может дать 2 попытки ответа на один вопрос.
 
 ### 2.10. `user` – `user_question_progress` (1:N)
+
 - **Описание**: Один пользователь имеет прогресс по множеству вопросов.
 - **Целостность**: `ON DELETE CASCADE` – при удалении пользователя удаляется его прогресс.
 
 ### 2.11. `question` – `user_question_progress` (1:N)
+
 - **Описание**: Один вопрос имеет прогресс множества пользователей.
 - **Целостность**: `ON DELETE CASCADE` – при удалении вопроса удаляется прогресс по нему.
 
 ### 2.12. `user` – `user_topic_progress` (1:N)
+
 - **Описание**: Один пользователь имеет прогресс по множеству тем.
 - **Целостность**: `ON DELETE CASCADE` – при удалении пользователя удаляется его прогресс по темам.
 
 ### 2.13. `topic` – `user_topic_progress` (1:N)
+
 - **Описание**: Одна тема имеет прогресс множества пользователей.
 - **Целостность**: `ON DELETE CASCADE` – при удалении темы удаляется прогресс по ней.
 
@@ -204,12 +251,14 @@
 **Описание**: Пользователь создаёт аккаунт в системе.
 
 **Последовательность**:
+
 1. Проверка уникальности email.
 2. Хеширование пароля.
 3. Создание записи в `user` с начальными значениями:
-   - `full_score = 0`
-   - `league = 'bronze'`
-   - `created_at = NOW()`
+  - `full_score = 0`
+  - `league = 'bronze'`
+  - `created_at = NOW()`
+
 ---
 
 ### 3.2. Создание и настройка сессии интервью
@@ -217,10 +266,11 @@
 **Описание**: Пользователь выбирает технологию и уровень сложности, настраивает параметры сессии.
 
 **Последовательность**:
+
 1. Получение `technology_level_id` по выбранной технологии и уровню.
 2. Создание записи в `interview_session`:
-   - `status = 'planned'`
-   - `config` содержит JSON с настройками (например, `{"format": "text-text", "questions_count": 10}`)
+  - `status = 'planned'`
+  - `config` содержит JSON с настройками (например, `{"format": "text-text", "questions_count": 10}`)
 3. Пользователь ожидает начала сессии.
 
 ---
@@ -230,13 +280,14 @@
 **Описание**: Система формирует список вопросов на основе прогресса пользователя.
 
 **Алгоритм формирования**:
+
 1. Получить все `topic_id` для выбранного `technology_level_id` из `technology_level_topic`.
 2. Для каждого топика получить прогресс пользователя из `user_topic_progress`.
 3. Для каждого вопроса в топике получить `mastery` из `user_question_progress`.
 4. Выбрать N вопросов по приоритету:
-   - Вопросы с наименьшим `mastery` (слабые места)
-   - Вопросы, которые давно не задавались
-   - Новые вопросы (нет записи в прогрессе)
+  - Вопросы с наименьшим `mastery` (слабые места)
+  - Вопросы, которые давно не задавались
+  - Новые вопросы (нет записи в прогрессе)
 5. Создать записи в `interview_session_question` с копией текста и сложности.
 
 ---
@@ -246,13 +297,14 @@
 **Описание**: Пользователь отвечает на вопрос, получает обратную связь от AI.
 
 **Последовательность**:
+
 1. Получить текущий вопрос сессии по `session_id` и `current_order`.
 2. Отправить ответ пользователя в AI и получить обратную связь с оценкой.
 3. Сохранить ответ в `interview_answer`.
 4. Обновить прогресс пользователя:
-   - В `user_question_progress` обновить статистику по вопросу
-   - Пересчитать `mastery` для вопроса
-   - Обновить `user_topic_progress` для темы вопроса
+  - В `user_question_progress` обновить статистику по вопросу
+  - Пересчитать `mastery` для вопроса
+  - Обновить `user_topic_progress` для темы вопроса
 5. Обновить `current_order` в сессии.
 
 ---
@@ -262,6 +314,7 @@
 **Описание**: Завершение интервью после всех вопросов или досрочно.
 
 **Последовательность**:
+
 1. Проверить, все ли вопросы отвечены (`current_order > total_questions`).
 2. Обновить статус сессии на `completed`.
 3. Установить `finished_at = NOW()`.
@@ -275,6 +328,7 @@
 **Описание**: Пользователь просматривает свою статистику и прогресс.
 
 **Варианты просмотра**:
+
 1. **Общий прогресс** (дашборд): полный счёт, лига, статистика по технологиям.
 2. **Прогресс по технологии**: список тем с процентами освоения.
 3. **Детали по теме**: список вопросов с уровнем освоения.
@@ -286,8 +340,10 @@
 **Описание**: Добавление и редактирование технологий, тем и вопросов.
 
 **Варианты операций**:
+
 1. Добавление новой технологии.
 2. Добавление уровня для технологии.
 3. Создание новой темы.
 4. Привязка темы к уровню технологии.
 5. Добавление вопроса в тему.
+

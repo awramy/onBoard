@@ -61,6 +61,7 @@ export class AuthService {
   }
 
   private generateToken(userId: string, email: string): string {
+    // Юзаем JwtService для генерации токена
     return this.jwtService.sign({ sub: userId, email });
   }
 }

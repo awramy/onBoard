@@ -1,5 +1,18 @@
-import { Controller, Get, Post, Param, Body, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Query,
+  Body,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { SessionsService } from './sessions.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -24,13 +37,22 @@ export class SessionsController {
 
   @Get()
   @ApiOperation({ summary: 'Get all sessions for current user' })
-  findAll(@CurrentUser() user: { id: string }) {
-    return this.sessionsService.findAll(user.id);
+  @ApiQuery({ name: 'lang', required: false, example: 'en' })
+  findAll(
+    @CurrentUser() user: { id: string },
+    @Query('lang') lang: string = 'en',
+  ) {
+    return this.sessionsService.findAll(user.id, lang);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get session details' })
-  findOne(@CurrentUser() user: { id: string }, @Param('id') id: string) {
-    return this.sessionsService.findOne(id, user.id);
+  @ApiQuery({ name: 'lang', required: false, example: 'en' })
+  findOne(
+    @CurrentUser() user: { id: string },
+    @Param('id') id: string,
+    @Query('lang') lang: string = 'en',
+  ) {
+    return this.sessionsService.findOne(id, user.id, lang);
   }
 }

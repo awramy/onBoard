@@ -1,5 +1,10 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { TechnologiesService } from './technologies.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 
@@ -12,13 +17,15 @@ export class TechnologiesController {
 
   @Get()
   @ApiOperation({ summary: 'Get all technologies' })
-  findAll() {
-    return this.technologiesService.findAll();
+  @ApiQuery({ name: 'lang', required: false, example: 'en' })
+  findAll(@Query('lang') lang: string = 'en') {
+    return this.technologiesService.findAll(lang);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get technology by ID' })
-  findOne(@Param('id') id: string) {
-    return this.technologiesService.findOne(id);
+  @ApiQuery({ name: 'lang', required: false, example: 'en' })
+  findOne(@Param('id') id: string, @Query('lang') lang: string = 'en') {
+    return this.technologiesService.findOne(id, lang);
   }
 }

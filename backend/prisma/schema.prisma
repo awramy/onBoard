@@ -23,10 +23,16 @@ model User {
   @@map("user")
 }
 
+enum Difficulty {
+  junior
+  middle
+  senior
+}
+
 model Technology {
   id          String   @id @default(uuid()) @db.Uuid
   name        String   @unique @db.VarChar(100)
-  description String?  @db.Text
+  description Json?
   createdAt   DateTime @default(now()) @map("created_at")
 
   levels TechnologyLevel[]
@@ -37,7 +43,7 @@ model Technology {
 model TechnologyLevel {
   id           String   @id @default(uuid()) @db.Uuid
   technologyId String   @map("technology_id") @db.Uuid
-  difficulty   String   @db.VarChar(20)
+  difficulty   Difficulty
   createdAt    DateTime @default(now()) @map("created_at")
 
   technology Technology         @relation(fields: [technologyId], references: [id], onDelete: Cascade)
@@ -50,8 +56,8 @@ model TechnologyLevel {
 
 model Topic {
   id          String   @id @default(uuid()) @db.Uuid
-  name        String   @db.VarChar(200)
-  description String?  @db.Text
+  name        Json
+  description Json?
   createdAt   DateTime @default(now()) @map("created_at")
 
   technologyLevels TechnologyLevelTopic[]
@@ -75,10 +81,10 @@ model TechnologyLevelTopic {
 model Question {
   id          String   @id @default(uuid()) @db.Uuid
   topicId     String   @map("topic_id") @db.Uuid
-  text        String   @db.Text
+  text        Json
   type        String   @default("theory") @db.VarChar(20)
   difficulty  Int
-  explanation String?  @db.Text
+  explanation Json?
   isDivide    Boolean? @map("is_devide")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
@@ -130,7 +136,7 @@ model InterviewAnswer {
   id                String   @id @default(uuid()) @db.Uuid
   sessionQuestionId String   @map("session_question_id") @db.Uuid
   answerText        String   @map("answer_text") @db.Text
-  aiFeedback        Json     @map("ai_feedback")
+  aiFeedback        String   @map("ai_feedback") @db.Text
   score             Int
   createdAt         DateTime @default(now()) @map("created_at")
 
