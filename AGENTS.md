@@ -18,12 +18,14 @@
 ### Key caveats
 
 - **Docker daemon**: Must be started with `sudo dockerd &` before `docker compose up`. The VM uses `fuse-overlayfs` storage driver and `iptables-legacy`.
-- **Prisma 7 driver adapter**: PrismaClient uses `@prisma/adapter-pg` (not the legacy `datasources` option). `prisma.config.ts` provides the URL for migrations; runtime client gets its connection from `process.env.DATABASE_URL` via the adapter.
-- **Prisma migrations**: Run `npx prisma migrate deploy` from `backend/` after DB is up.
-- **Prisma client generation**: Run `npx prisma generate` from `backend/` if `node_modules` are reinstalled.
+- **Prisma 7 driver adapter**: PrismaClient uses `@prisma/adapter-pg` (not the legacy `datasources` option). Import from `@prisma/client` (NOT `.prisma/client`). `prisma.config.ts` provides the URL for migrations; runtime client gets its connection from `process.env.DATABASE_URL` via the adapter.
+- **Prisma migrations**: Run `npx prisma migrate deploy` from `backend/` after DB is up. If schema changed after rebase, use `PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION="yes" npx prisma migrate reset --force` for dev DB.
+- **Prisma client generation**: Run `npx prisma generate` from `backend/` if `node_modules` are reinstalled or after migration.
 - **Environment variables**: `backend/.env` has all needed vars (`DATABASE_URL`, `JWT_SECRET`, `JWT_EXPIRATION`, `PORT`).
-- **Seed data**: Run `npx tsx prisma/seed.ts` from `backend/` to populate technologies, topics, and questions.
+- **Seed data**: Run `npx tsx prisma/seed.ts` from `backend/` to populate technologies, topics, and questions (uses JSON i18n format).
 - **Frontend proxy**: Vite dev server proxies `/api` requests to `http://localhost:3000`, so backend must be running for the frontend to work.
+- **i18n fields**: `Technology.description`, `Topic.name`/`description`, `Question.text`/`explanation` are `Json` type with `{en: "...", ru: "..."}` structure. Use `localize()` from `common/utils/i18n.ts`. `Technology.name` is plain `VARCHAR` (not JSON).
+- **Pagination**: All list endpoints support `?skip=0&take=50` via `PaginationDto` from `common/dto/pagination.dto.ts`.
 
 ### Standard commands
 

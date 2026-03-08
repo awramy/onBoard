@@ -22,11 +22,13 @@ export class SessionsService {
     });
   }
 
-  async findAll(userId: string, locale: string) {
+  async findAll(userId: string, locale: string, skip = 0, take = 50) {
     const sessions = await this.prisma.interviewSession.findMany({
       where: { userId },
       include: { technologyLevel: { include: { technology: true } } },
       orderBy: { createdAt: 'desc' },
+      skip,
+      take,
     });
     return sessions.map((s) => ({
       ...s,

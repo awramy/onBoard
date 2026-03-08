@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { localize } from '../common/utils/i18n';
 
@@ -6,9 +6,11 @@ import { localize } from '../common/utils/i18n';
 export class TechnologiesService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(locale: string) {
+  async findAll(locale: string, skip = 0, take = 50) {
     const technologies = await this.prisma.technology.findMany({
       include: { levels: true },
+      skip,
+      take,
     });
     return technologies.map((t) => ({
       ...t,
@@ -27,7 +29,7 @@ export class TechnologiesService {
         },
       },
     });
-    if (!technology) return null;
+    if (!technology) throw new NotFoundException('Technology not found');
 
     return {
       ...technology,

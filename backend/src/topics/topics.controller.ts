@@ -5,25 +5,32 @@ import {
   ApiOperation,
   ApiQuery,
 } from '@nestjs/swagger';
-import { TechnologiesService } from './technologies.service';
+import { TopicsService } from './topics.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PaginationDto } from '../common/dto/pagination.dto';
 
-@ApiTags('technologies')
+@ApiTags('topics')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
-@Controller('api/technologies')
-export class TechnologiesController {
-  constructor(private technologiesService: TechnologiesService) {}
+@Controller('api/topics')
+export class TopicsController {
+  constructor(private topicsService: TopicsService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Get all technologies' })
+  @ApiOperation({ summary: 'Get topics by technology level ID' })
+  @ApiQuery({
+    name: 'levelId',
+    required: true,
+    description: 'Technology level UUID',
+  })
   @ApiQuery({ name: 'lang', required: false, example: 'en' })
   findAll(
+    @Query('levelId') levelId: string,
     @Query('lang') lang: string = 'en',
     @Query() pagination: PaginationDto,
   ) {
-    return this.technologiesService.findAll(
+    return this.topicsService.findByLevel(
+      levelId,
       lang,
       pagination.skip ?? 0,
       pagination.take ?? 50,
@@ -31,9 +38,9 @@ export class TechnologiesController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get technology by ID' })
+  @ApiOperation({ summary: 'Get topic by ID with questions count' })
   @ApiQuery({ name: 'lang', required: false, example: 'en' })
   findOne(@Param('id') id: string, @Query('lang') lang: string = 'en') {
-    return this.technologiesService.findOne(id, lang);
+    return this.topicsService.findOne(id, lang);
   }
 }
