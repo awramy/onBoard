@@ -44,7 +44,7 @@ export class OpenAiProvider extends BaseAiProvider {
         { role: 'developer', content: EVALUATION_SYSTEM_PROMPT },
         { role: 'user', content: userPrompt },
       ],
-      temperature: 0.3,
+      temperature: this.getTemperature(0.3),
     });
 
     const text = completion.choices[0]?.message?.content ?? '';
@@ -63,9 +63,15 @@ export class OpenAiProvider extends BaseAiProvider {
         { role: 'developer', content: QUESTION_GEN_SYSTEM_PROMPT },
         { role: 'user', content: userPrompt },
       ],
-      temperature: 0.7,
+      temperature: this.getTemperature(0.7),
     });
 
-    return (completion.choices[0]?.message?.content ?? '').trim();
+    return this.finalizeGeneratedQuestion(
+      completion.choices[0]?.message?.content ?? '',
+    );
+  }
+
+  private getTemperature(defaultTemperature: number): number {
+    return this.modelId === 'gpt-5-nano' ? 1 : defaultTemperature;
   }
 }

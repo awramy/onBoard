@@ -16,10 +16,16 @@ export class AiController {
     summary: 'List registered AI providers, models, and routing aliases',
   })
   getProviders() {
-    return {
-      hasProviders: this.aiService.hasProviders(),
-      providers: this.aiService.getProviderRegistrations(),
-    };
+    return this.aiService.getProviderHealthSummary();
+  }
+
+  @Get('egress')
+  @ApiOperation({
+    summary:
+      'Inspect Gemini egress path, proxy mode, and public IP diagnostics',
+  })
+  getGeminiEgress() {
+    return this.aiService.getGeminiEgressDiagnostics();
   }
 
   @Post('test')

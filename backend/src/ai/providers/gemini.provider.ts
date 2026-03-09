@@ -8,20 +8,42 @@ import {
   QUESTION_GEN_SYSTEM_PROMPT,
 } from '../ai.interfaces';
 import { BaseAiProvider } from './base-ai.provider';
+import {
+  applyGeminiTransportConfig,
+  collectGeminiEgressDiagnostics,
+  DEFAULT_GEMINI_BASE_URL,
+  type GeminiEgressDiagnostics,
+  resolveGeminiTransportConfig,
+} from './gemini.transport';
 
 @Injectable()
 export class GeminiProvider extends BaseAiProvider {
   readonly name = 'gemini';
+  private static readonly EVALUATE_MAX_OUTPUT_TOKENS = 180;
+  private static readonly GENERATE_MAX_OUTPUT_TOKENS = 60;
   private client: GoogleGenAI | null = null;
   protected readonly logger = new Logger(GeminiProvider.name);
   readonly modelId: string;
+  readonly baseUrl: string;
 
   constructor() {
     super();
     this.modelId = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+    const transportConfig = resolveGeminiTransportConfig();
+    this.baseUrl = transportConfig.baseUrl;
+    applyGeminiTransportConfig(transportConfig, this.logger);
+
     const apiKey = process.env.GEMINI_API_KEY;
     if (apiKey) {
-      this.client = new GoogleGenAI({ apiKey });
+      this.client = new GoogleGenAI({
+        apiKey,
+        httpOptions:
+          transportConfig.baseUrl !== DEFAULT_GEMINI_BASE_URL
+            ? {
+                baseUrl: transportConfig.baseUrl,
+              }
+            : undefined,
+      });
     } else {
       this.logger.warn('GEMINI_API_KEY not set — provider will be unavailable');
     }
@@ -44,6 +66,7 @@ export class GeminiProvider extends BaseAiProvider {
       config: {
         systemInstruction: EVALUATION_SYSTEM_PROMPT,
         temperature: 0.3,
+        maxOutputTokens: GeminiProvider.EVALUATE_MAX_OUTPUT_TOKENS,
       },
     });
 
@@ -63,9 +86,14 @@ export class GeminiProvider extends BaseAiProvider {
       config: {
         systemInstruction: QUESTION_GEN_SYSTEM_PROMPT,
         temperature: 0.7,
+        maxOutputTokens: GeminiProvider.GENERATE_MAX_OUTPUT_TOKENS,
       },
     });
 
-    return (response.text ?? '').trim();
+    return this.finalizeGeneratedQuestion(response.text ?? '');
+  }
+
+  async getEgressDiagnostics(): Promise<GeminiEgressDiagnostics> {
+    return collectGeminiEgressDiagnostics(resolveGeminiTransportConfig());
   }
 }

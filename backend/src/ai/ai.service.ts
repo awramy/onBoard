@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { GeminiProvider } from './providers/gemini.provider';
 import { OpenAiProvider } from './providers/openai.provider';
 import {
+  AiProviderHealthSummary,
   AiProvider,
   AiProviderRegistration,
   AiModelTestResult,
@@ -16,7 +17,7 @@ import {
 export class AiService {
   private readonly providers = new Map<string, AiProvider>();
   private readonly logger = new Logger(AiService.name);
-  private defaultProviderName: string = 'gemini';
+  private defaultProviderName: string = 'openai';
 
   constructor(
     private geminiProvider: GeminiProvider,
@@ -51,14 +52,14 @@ export class AiService {
         'No AI providers configured — set GEMINI_API_KEY or OPENAI_API_KEY',
       );
     } else {
-      this.defaultProviderName = this.providers.has('gemini')
-        ? 'gemini'
-        : 'openai';
+      this.defaultProviderName = this.providers.has('openai')
+        ? 'openai'
+        : 'gemini';
       this.logger.log(`Default AI provider: ${this.defaultProviderName}`);
     }
   }
 
-  // AI-NOTE: Возвращает провайдер по имени модели; "auto" → дефолтный (бесплатный)
+  // AI-NOTE: Возвращает провайдер по имени модели; "auto" → дефолтный провайдер
   getProvider(modelName?: string): AiProvider {
     const name =
       modelName === 'auto' || !modelName ? this.defaultProviderName : modelName;
@@ -87,6 +88,13 @@ export class AiService {
     }));
   }
 
+  getProviderHealthSummary(): AiProviderHealthSummary {
+    return {
+      hasProviders: this.hasProviders(),
+      providers: this.getProviderRegistrations(),
+    };
+  }
+
   // AI-NOTE: Есть ли хотя бы один рабочий провайдер
   hasProviders(): boolean {
     return this.providers.size > 0;
@@ -110,6 +118,10 @@ export class AiService {
     const provider = this.getProvider(modelName);
     this.logger.debug(`Generating question text via ${provider.name}`);
     return provider.generateQuestionText(ctx);
+  }
+
+  async getGeminiEgressDiagnostics() {
+    return this.geminiProvider.getEgressDiagnostics();
   }
 
   // AI-NOTE: Прогоняет lightweight-запрос к одной или всем доступным моделям

@@ -73,9 +73,10 @@ backend/
 ### 4. AI Core
 
 - **GET `/api/ai/providers`** — список зарегистрированных AI-провайдеров, активных моделей и routing aliases (только для авторизованных).
+- **GET `/api/ai/egress`** — диагностика Gemini egress path: proxy mode, public IP/country, DNS lookup, локальные интерфейсы и подсказки по split tunneling / IPv6 leakage (только для авторизованных).
 - **POST `/api/ai/test`** — lightweight-проверка одной модели или всех доступных моделей. Принимает опциональные поля `model` и `operation` (`evaluate` или `generate`) и возвращает `success`, `latencyMs`, результат вызова или текст ошибки (только для авторизованных).
 
-Ручка нужна для быстрой проверки, что модель действительно доступна по API-ключу и корректно вызывается через `AiService`.
+Ручки нужны для быстрой проверки, что модель действительно доступна по API-ключу, через какой egress выходит Node runtime и корректно ли вызывается `AiService`.
 
 ### 5. Служебные
 
@@ -116,6 +117,9 @@ backend/
 | `PORT` | нет | Порт HTTP-сервера, по умолчанию 3000 | `3000` |
 | `GEMINI_API_KEY` | нет | API key для Gemini provider | `AIza...` |
 | `GEMINI_MODEL` | нет | Явное имя Gemini-модели, по умолчанию `gemini-2.0-flash` | `gemini-2.5-pro` |
+| `GEMINI_BASE_URL` | нет | Override Gemini base URL для relay / совместимого upstream | `https://relay.example.com` |
+| `GEMINI_PROXY_URL` | нет | Явный HTTP CONNECT proxy для Gemini через undici dispatcher | `http://user:pass@proxy.example.com:8888` |
+| `GEMINI_FORCE_IPV4` | нет | Включает `ipv4first`, чтобы снизить риск IPv6 leakage | `true` |
 | `OPENAI_API_KEY` | нет | API key для OpenAI provider | `sk-...` |
 | `OPENAI_MODEL` | нет | Явное имя OpenAI-модели, по умолчанию `gpt-4o-mini` | `gpt-4.1-mini` |
 
@@ -139,6 +143,21 @@ backend/
 ### Документация API
 
 После запуска сервера: **http://localhost:3000/api/docs** (Swagger UI).
+
+### Диагностика Gemini egress
+
+Если Gemini отвечает `User location is not supported for the API use`, сначала
+проверьте runtime path:
+
+1. `GET /api/ai/egress` — какой public IP / country видит процесс Node и в каком режиме работает transport (`direct` или `proxy`).
+2. `POST /api/ai/test` — проходит ли реальный вызов в модель.
+
+Практические замечания:
+
+- Браузерный VPN не гарантирует, что `pnpm start:dev` и Node runtime идут через тот же egress.
+- `GEMINI_PROXY_URL` включает upstream через `undici` global dispatcher, то есть fetch-based traffic процесса будет использовать тот же proxy.
+- `GEMINI_FORCE_IPV4=true` полезен, если подозреваете IPv6 leakage мимо VPN/proxy.
+- Для смены egress нужен внешний proxy с IP в поддерживаемой стране; достаточно прописать его URL с кредами в `GEMINI_PROXY_URL`.
 
 ---
 

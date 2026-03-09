@@ -114,23 +114,23 @@ describe('AiService', () => {
     });
 
     const service = new AiService(gemini.provider, openai.provider);
-    expect(service.getProvider('auto').name).toBe('gemini');
+    expect(service.getProvider('auto').name).toBe('openai');
   });
 
-  it('falls back to openai as default when gemini is unavailable', () => {
+  it('falls back to gemini as default when openai is unavailable', () => {
     const gemini = createMockProvider({
       name: 'gemini',
       modelId: 'gemini-2.0-flash',
-      isAvailable: () => false,
+      isAvailable: () => true,
     });
     const openai = createMockProvider({
       name: 'openai',
       modelId: 'gpt-4o-mini',
-      isAvailable: () => true,
+      isAvailable: () => false,
     });
 
     const service = new AiService(gemini.provider, openai.provider);
-    expect(service.getProvider('auto').name).toBe('openai');
+    expect(service.getProvider('auto').name).toBe('gemini');
   });
 
   it('returns provider registrations with aliases and default flag', () => {
@@ -153,13 +153,13 @@ describe('AiService', () => {
         name: 'gemini',
         modelId: customGeminiModel,
         aliases: ['gemini', 'gemini-2.0-flash', customGeminiModel],
-        isDefault: true,
+        isDefault: false,
       },
       {
         name: 'openai',
         modelId: 'gpt-4.1-mini',
         aliases: ['gpt-4.1-mini', 'gpt-4o', 'gpt-4o-mini', 'openai'],
-        isDefault: false,
+        isDefault: true,
       },
     ]);
   });

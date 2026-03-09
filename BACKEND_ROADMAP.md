@@ -262,6 +262,12 @@ interface GenerateQuestionContext {
 - ✅ `AiService` возвращает детальный summary по проверке: `success`, `latencyMs`, итог вызова или текст ошибки без падения всего endpoint.
 - ✅ Добавлены unit-тесты на диагностику, dedupe провайдеров по алиасам и обработку ошибок провайдера.
 
+### 3.6 Gemini Egress Mitigation ✅
+
+- ✅ Добавлен `GET /api/ai/egress` для диагностики outbound path Gemini: public IP, geo probe, DNS lookup, local interfaces, proxy mode, IPv4 preference.
+- ✅ `GeminiProvider` получил transport-конфиг через env: `GEMINI_PROXY_URL`, `GEMINI_BASE_URL`, `GEMINI_FORCE_IPV4`.
+- ✅ При `GEMINI_PROXY_URL` backend включает upstream через `undici` global dispatcher и логирует, что fetch-based трафик процесса идет через тот же proxy.
+
 ---
 
 ## Фаза 4 — Процесс ответа на вопрос (ядро продукта)

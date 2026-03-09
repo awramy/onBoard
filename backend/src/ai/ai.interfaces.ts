@@ -50,6 +50,11 @@ export interface AiModelTestSummary {
   results: AiModelTestResult[];
 }
 
+export interface AiProviderHealthSummary {
+  hasProviders: boolean;
+  providers: AiProviderRegistration[];
+}
+
 export const AI_PROVIDER = Symbol('AI_PROVIDER');
 
 export interface AiProvider {
@@ -65,9 +70,9 @@ You evaluate candidate answers to technical questions.
 Respond ONLY with valid JSON matching this schema:
 {
   "score": <number 0-100>,
-  "feedback": "<detailed feedback in the same language as the answer>",
+  "feedback": "<short feedback in the same language as the answer>",
   "isFullyClosed": <boolean — true if the question is fully answered>,
-  "recommendations": ["<suggestion 1>", "<suggestion 2>"]
+  "recommendations": ["<short action item 1>", "<short action item 2>"]
 }
 
 Scoring guidelines:
@@ -78,11 +83,18 @@ Scoring guidelines:
 - 81-100: Excellent, comprehensive answer
 
 If the question has isDivide=true, consider previous answers when evaluating completeness.
-Set isFullyClosed=true only when the topic is comprehensively covered.`;
+Set isFullyClosed=true only when the topic is comprehensively covered.
+Keep feedback to at most 2 short sentences.
+Return 0-2 recommendations only.
+Each recommendation must be brief, concrete, and no more than 8 words.
+Do not restate the full question or provide tutorial-style explanations.`;
 
 export const QUESTION_GEN_SYSTEM_PROMPT = `You are a technical interview question generator.
 Given an original question, its explanation, and previous answer history, generate a follow-up question
 that covers aspects the candidate has not yet demonstrated understanding of.
 
 Respond with ONLY the question text, no extra formatting.
-Keep the same language as the original question.`;
+Keep the same language as the original question.
+Return exactly one concise follow-up question.
+Focus on the single biggest knowledge gap.
+Keep it under 20 words and avoid multi-part questions.`;
