@@ -69,7 +69,10 @@ export class SessionsService {
       where: { id, userId },
       include: {
         technologyLevel: { include: { technology: true } },
-        questions: { include: { answers: true }, orderBy: { order: 'asc' } },
+        questions: {
+          include: { answers: { orderBy: { createdAt: 'asc' } } },
+          orderBy: { order: 'asc' },
+        },
       },
     });
     if (!session) throw new NotFoundException('Session not found');
@@ -246,7 +249,7 @@ export class SessionsService {
     const sessionQuestion =
       await this.prisma.interviewSessionQuestion.findFirst({
         where: { sessionId, order: session.currentOrder },
-        include: { answers: true },
+        include: { answers: { orderBy: { createdAt: 'asc' } } },
       });
 
     if (!sessionQuestion)
