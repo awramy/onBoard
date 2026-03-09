@@ -23,12 +23,14 @@
 - `POST /api/sessions/:id/answer` — подача ответа с AI-оценкой, обновлением прогресса и автозавершением
 
 **Общие улучшения (Фаза 1):**
+
 - Пагинация `skip`/`take` на всех списковых эндпоинтах через `PaginationDto`
 - `NotFoundException` на `GET /:id` эндпоинтах вместо `null`
 - Локализация (`?lang=ru|en`) для всех полей типа `Json` через `localize()`
 - `ParseUUIDPipe` на обязательных query-параметрах (`topicId`, `levelId`, `technologyLevelId`)
 
 **Улучшения (Фаза 2):**
+
 - ProgressModule — переиспользуемый сервис чтения/записи прогресса (upsert, пересчёт)
 - QuestionGeneratorService — round-robin алгоритм выбора вопросов из неотвеченных + fallback на low-mastery
 - Автоматическое завершение сессии при пропуске последнего вопроса
@@ -98,6 +100,8 @@ graph TD
   UsersCtrl --> UsersSvc
   UsersCtrl --> ProgressSvc
 ```
+
+
 
 ---
 
@@ -190,6 +194,8 @@ graph TD
 ### 3.1 AiModule ✅
 
 Новый модуль `backend/src/ai/` — `@Global`, экспортирует `AiService`.
+
+*На текущий момент в .env проекта подключен api_key для Gemini ( выбрать free tear модель для подключения - в .env есть переменные: GEMINI_API_KEY, (GEMINI_PROJECT_NAME, GEMINI_PROJECT_NUMBER - при необходимости))
 
 **Структура:**
 
@@ -405,6 +411,8 @@ graph LR
   P2 --> P6
   P5 --> P6
 ```
+
+
 
 Фазы 1 и 3 можно начинать параллельно. Фазы 4-6 зависят от предыдущих.
 
