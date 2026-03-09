@@ -1,4 +1,11 @@
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiBearerAuth,
@@ -25,7 +32,7 @@ export class TopicsController {
   })
   @ApiQuery({ name: 'lang', required: false, example: 'en' })
   findAll(
-    @Query('levelId') levelId: string,
+    @Query('levelId', ParseUUIDPipe) levelId: string,
     @Query('lang') lang: string = 'en',
     @Query() pagination: PaginationDto,
   ) {

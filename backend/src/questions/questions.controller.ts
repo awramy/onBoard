@@ -1,4 +1,11 @@
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiBearerAuth,
@@ -21,7 +28,7 @@ export class QuestionsController {
   @ApiQuery({ name: 'topicId', required: true, description: 'Topic UUID' })
   @ApiQuery({ name: 'lang', required: false, example: 'en' })
   findAll(
-    @Query('topicId') topicId: string,
+    @Query('topicId', ParseUUIDPipe) topicId: string,
     @Query('lang') lang: string = 'en',
     @Query() pagination: PaginationDto,
   ) {

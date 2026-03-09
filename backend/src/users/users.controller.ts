@@ -1,4 +1,10 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  ParseUUIDPipe,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiBearerAuth,
@@ -39,7 +45,7 @@ export class UsersController {
   @ApiQuery({ name: 'lang', required: false, example: 'en' })
   getTopicProgress(
     @CurrentUser() user: { id: string },
-    @Query('technologyLevelId') technologyLevelId: string,
+    @Query('technologyLevelId', ParseUUIDPipe) technologyLevelId: string,
     @Query('lang') lang: string = 'en',
   ) {
     return this.usersService.getTopicProgress(user.id, technologyLevelId, lang);
@@ -51,7 +57,7 @@ export class UsersController {
   @ApiQuery({ name: 'lang', required: false, example: 'en' })
   getQuestionProgress(
     @CurrentUser() user: { id: string },
-    @Query('topicId') topicId: string,
+    @Query('topicId', ParseUUIDPipe) topicId: string,
     @Query('lang') lang: string = 'en',
     @Query() pagination: PaginationDto,
   ) {
