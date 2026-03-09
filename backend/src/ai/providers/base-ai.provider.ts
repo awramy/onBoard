@@ -8,6 +8,7 @@ import {
 
 export abstract class BaseAiProvider implements AiProvider {
   abstract readonly name: string;
+  abstract readonly modelId: string;
   protected abstract readonly logger: Logger;
 
   abstract isAvailable(): boolean;

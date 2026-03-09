@@ -26,14 +26,20 @@ export class AiService {
     if (this.geminiProvider.isAvailable()) {
       this.providers.set('gemini', this.geminiProvider);
       this.providers.set('gemini-2.0-flash', this.geminiProvider);
-      this.logger.log('Gemini provider registered');
+      this.providers.set(this.geminiProvider.modelId, this.geminiProvider);
+      this.logger.log(
+        `Gemini provider registered (model: ${this.geminiProvider.modelId})`,
+      );
     }
 
     if (this.openAiProvider.isAvailable()) {
       this.providers.set('openai', this.openAiProvider);
       this.providers.set('gpt-4o', this.openAiProvider);
       this.providers.set('gpt-4o-mini', this.openAiProvider);
-      this.logger.log('OpenAI provider registered');
+      this.providers.set(this.openAiProvider.modelId, this.openAiProvider);
+      this.logger.log(
+        `OpenAI provider registered (model: ${this.openAiProvider.modelId})`,
+      );
     }
 
     if (this.providers.size === 0) {

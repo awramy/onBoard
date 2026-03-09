@@ -25,6 +25,7 @@ export const AI_PROVIDER = Symbol('AI_PROVIDER');
 
 export interface AiProvider {
   readonly name: string;
+  readonly modelId: string;
   evaluateAnswer(ctx: EvaluateAnswerContext): Promise<EvaluationResult>;
   generateQuestionText(ctx: GenerateQuestionContext): Promise<string>;
 }

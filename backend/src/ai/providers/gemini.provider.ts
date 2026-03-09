@@ -14,11 +14,11 @@ export class GeminiProvider extends BaseAiProvider {
   readonly name = 'gemini';
   private client: GoogleGenAI | null = null;
   protected readonly logger = new Logger(GeminiProvider.name);
-  private readonly model: string;
+  readonly modelId: string;
 
   constructor() {
     super();
-    this.model = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+    this.modelId = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
     const apiKey = process.env.GEMINI_API_KEY;
     if (apiKey) {
       this.client = new GoogleGenAI({ apiKey });
@@ -39,7 +39,7 @@ export class GeminiProvider extends BaseAiProvider {
     const userPrompt = this.buildEvaluationPrompt(ctx);
 
     const response = await this.client.models.generateContent({
-      model: this.model,
+      model: this.modelId,
       contents: userPrompt,
       config: {
         systemInstruction: EVALUATION_SYSTEM_PROMPT,
@@ -58,7 +58,7 @@ export class GeminiProvider extends BaseAiProvider {
     const userPrompt = this.buildQuestionGenPrompt(ctx);
 
     const response = await this.client.models.generateContent({
-      model: this.model,
+      model: this.modelId,
       contents: userPrompt,
       config: {
         systemInstruction: QUESTION_GEN_SYSTEM_PROMPT,

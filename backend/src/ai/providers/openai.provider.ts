@@ -14,11 +14,11 @@ export class OpenAiProvider extends BaseAiProvider {
   readonly name = 'openai';
   private client: OpenAI | null = null;
   protected readonly logger = new Logger(OpenAiProvider.name);
-  private readonly model: string;
+  readonly modelId: string;
 
   constructor() {
     super();
-    this.model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+    this.modelId = process.env.OPENAI_MODEL || 'gpt-4o-mini';
     const apiKey = process.env.OPENAI_API_KEY;
     if (apiKey) {
       this.client = new OpenAI({ apiKey });
@@ -39,7 +39,7 @@ export class OpenAiProvider extends BaseAiProvider {
     const userPrompt = this.buildEvaluationPrompt(ctx);
 
     const completion = await this.client.chat.completions.create({
-      model: this.model,
+      model: this.modelId,
       messages: [
         { role: 'developer', content: EVALUATION_SYSTEM_PROMPT },
         { role: 'user', content: userPrompt },
@@ -58,7 +58,7 @@ export class OpenAiProvider extends BaseAiProvider {
     const userPrompt = this.buildQuestionGenPrompt(ctx);
 
     const completion = await this.client.chat.completions.create({
-      model: this.model,
+      model: this.modelId,
       messages: [
         { role: 'developer', content: QUESTION_GEN_SYSTEM_PROMPT },
         { role: 'user', content: userPrompt },
