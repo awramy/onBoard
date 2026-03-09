@@ -8,6 +8,7 @@ import { TopicsModule } from './topics/topics.module';
 import { QuestionsModule } from './questions/questions.module';
 import { UsersModule } from './users/users.module';
 import { SessionsModule } from './sessions/sessions.module';
+import { ProgressModule } from './progress/progress.module';
 import { AppController } from './app.controller';
 
 @Module({
@@ -20,6 +21,7 @@ import { AppController } from './app.controller';
     TopicsModule,
     QuestionsModule,
     UsersModule,
+    ProgressModule,
     SessionsModule,
   ],
   controllers: [AppController],

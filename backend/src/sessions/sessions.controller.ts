@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  ParseUUIDPipe,
   Post,
   Param,
   Query,
@@ -57,9 +58,40 @@ export class SessionsController {
   @ApiQuery({ name: 'lang', required: false, example: 'en' })
   findOne(
     @CurrentUser() user: { id: string },
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Query('lang') lang: string = 'en',
   ) {
     return this.sessionsService.findOne(id, user.id, lang);
+  }
+
+  @Post(':id/start')
+  @ApiOperation({ summary: 'Start a planned session — generates questions' })
+  @ApiQuery({ name: 'lang', required: false, example: 'en' })
+  start(
+    @CurrentUser() user: { id: string },
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query('lang') lang: string = 'en',
+  ) {
+    return this.sessionsService.start(id, user.id, lang);
+  }
+
+  @Get(':id/current-question')
+  @ApiOperation({
+    summary: 'Get the current question of an in-progress session',
+  })
+  currentQuestion(
+    @CurrentUser() user: { id: string },
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.sessionsService.getCurrentQuestion(id, user.id);
+  }
+
+  @Post(':id/skip')
+  @ApiOperation({ summary: 'Skip the current question (score = 0)' })
+  skip(
+    @CurrentUser() user: { id: string },
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.sessionsService.skip(id, user.id);
   }
 }

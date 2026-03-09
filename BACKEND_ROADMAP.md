@@ -2,7 +2,7 @@
 
 ## Текущее состояние
 
-**Реализовано (19 эндпоинтов):**
+**Реализовано (22 эндпоинта):**
 
 - `GET /api/health` — healthcheck
 - `POST /api/auth/register`, `POST /api/auth/login` — JWT-аутентификация
@@ -17,18 +17,25 @@
 - `GET /api/users/me/progress/topics?technologyLevelId=<uuid>` — прогресс по топикам уровня
 - `GET /api/users/me/progress/questions?topicId=<uuid>` — прогресс по вопросам топика (с пагинацией)
 - `POST /api/sessions`, `GET /api/sessions`, `GET /api/sessions/:id` — CRUD сессий (с пагинацией, i18n)
+- `POST /api/sessions/:id/start` — запуск сессии с генерацией вопросов
+- `GET /api/sessions/:id/current-question` — текущий вопрос сессии
+- `POST /api/sessions/:id/skip` — пропуск вопроса (score = 0, прогресс записывается)
 
 **Общие улучшения (Фаза 1):**
 - Пагинация `skip`/`take` на всех списковых эндпоинтах через `PaginationDto`
 - `NotFoundException` на `GET /:id` эндпоинтах вместо `null`
 - Локализация (`?lang=ru|en`) для всех полей типа `Json` через `localize()`
+- `ParseUUIDPipe` на обязательных query-параметрах (`topicId`, `levelId`, `technologyLevelId`)
+
+**Улучшения (Фаза 2):**
+- ProgressModule — переиспользуемый сервис чтения/записи прогресса (upsert, пересчёт)
+- QuestionGeneratorService — round-robin алгоритм выбора вопросов из неотвеченных + fallback на low-mastery
+- Автоматическое завершение сессии при пропуске последнего вопроса
 
 **Не реализовано:**
 
-- Нет механизма старта сессии и генерации вопросов
 - Нет подачи ответа и оценки через AI
-- Нет обновления прогресса (UserQuestionProgress, UserTopicProgress)
-- Нет завершения сессии с подсчётом баллов
+- Нет завершения сессии с подсчётом баллов (ручной finish/abandon)
 - Нет AI-интеграции (ни одного провайдера)
 - Redis подключён в Docker, но не используется в коде
 
@@ -115,21 +122,22 @@ graph TD
 
 ---
 
-## Фаза 2 — Генерация вопросов и старт сессии
+## Фаза 2 — Генерация вопросов и старт сессии ✅ ВЫПОЛНЕНО
 
-### 2.1 ProgressService (переиспользуемый сервис)
+### 2.1 ProgressService (переиспользуемый сервис) ✅
 
 Новый модуль `backend/src/progress/` — отвечает за чтение и запись прогресса.
 
-- `getQuestionProgress(userId, questionId)` — прогресс по одному вопросу
-- `getTopicProgress(userId, topicId)` — прогресс по одному топику
-- `getUnansweredQuestions(userId, technologyLevelId)` — вопросы без прогресса для данного уровня
-- `updateQuestionProgress(userId, questionId, score)` — upsert прогресса
-- `recalcTopicProgress(userId, topicId)` — пересчёт агрегата по топику
+- ✅ `getQuestionProgress(userId, questionId)` — прогресс по одному вопросу
+- ✅ `getTopicProgress(userId, topicId)` — прогресс по одному топику
+- ✅ `getUnansweredQuestions(userId, technologyLevelId)` — вопросы без прогресса для данного уровня
+- ✅ `getLowestMasteryQuestions(userId, technologyLevelId, limit)` — вопросы с наименьшим mastery (fallback)
+- ✅ `updateQuestionProgress(userId, questionId, score)` — upsert прогресса
+- ✅ `recalcTopicProgress(userId, topicId)` — пересчёт агрегата по топику
 
 Этот сервис будет использоваться и в UsersModule (фаза 1), и в SessionsModule (фаза 2), и в AI-оценке (фаза 4).
 
-### 2.2 QuestionGeneratorService
+### 2.2 QuestionGeneratorService ✅
 
 Сервис в `backend/src/sessions/question-generator.service.ts`.
 
@@ -148,17 +156,17 @@ graph TD
 5. Вернуть список InterviewSessionQuestion
 ```
 
-### 2.3 Новые эндпоинты в SessionsController
+### 2.3 Новые эндпоинты в SessionsController ✅
 
-- `POST /api/sessions/:id/start` — запуск сессии:
+- ✅ `POST /api/sessions/:id/start` — запуск сессии:
   1. Проверить status === 'planned', принадлежность userId
   2. Вызвать QuestionGeneratorService для генерации вопросов
   3. Обновить session: status = 'in_progress', startedAt = now(), currentOrder = 1
   4. Вернуть сессию с первым вопросом
-- `GET /api/sessions/:id/current-question` — получить текущий вопрос сессии:
+- ✅ `GET /api/sessions/:id/current-question` — получить текущий вопрос сессии:
   1. Найти InterviewSessionQuestion по sessionId и order === session.currentOrder
   2. Вернуть questionText, difficulty, order, totalQuestions
-- `POST /api/sessions/:id/skip` — пропуск вопроса (currentOrder++, score = 0)
+- ✅ `POST /api/sessions/:id/skip` — пропуск вопроса (currentOrder++, score = 0, обновление прогресса)
 
 ---
 
@@ -367,9 +375,13 @@ graph LR
 - ✅ `backend/src/users/` — UsersModule, UsersController, UsersService
 - ✅ `backend/src/common/dto/pagination.dto.ts` — общий DTO для пагинации
 
-**Предстоящие модули (Фазы 2–6):**
+**Созданные модули (Фаза 2):**
 
-- `backend/src/progress/` — ProgressModule, ProgressService
+- ✅ `backend/src/progress/` — ProgressModule, ProgressService
+- ✅ `backend/src/sessions/question-generator.service.ts` — QuestionGeneratorService
+
+**Предстоящие модули (Фазы 3–6):**
+
 - `backend/src/ai/` — AiModule, AiService, провайдеры
 
 **Модифицированные файлы (Фаза 1):**
@@ -381,8 +393,15 @@ graph LR
 - ✅ `backend/src/sessions/sessions.controller.ts` — пагинация
 - ✅ `backend/src/prisma/prisma.service.ts` — исправлен импорт PrismaClient
 
-**Предстоящие модификации (Фазы 2–6):**
+**Модифицированные файлы (Фаза 2):**
 
-- `backend/src/sessions/sessions.service.ts` — добавить start, answer, finish
-- `backend/src/sessions/sessions.controller.ts` — новые эндпоинты
+- ✅ `backend/src/app.module.ts` — импорт ProgressModule
+- ✅ `backend/src/sessions/sessions.module.ts` — импорт ProgressModule, QuestionGeneratorService
+- ✅ `backend/src/sessions/sessions.service.ts` — методы start, getCurrentQuestion, skip
+- ✅ `backend/src/sessions/sessions.controller.ts` — эндпоинты start, current-question, skip + ParseUUIDPipe
+
+**Предстоящие модификации (Фазы 3–6):**
+
+- `backend/src/sessions/sessions.service.ts` — добавить answer, finish, abandon
+- `backend/src/sessions/sessions.controller.ts` — новые эндпоинты answer, finish, abandon
 - `backend/prisma/schema.prisma` — возможно добавление status в UserQuestionProgress

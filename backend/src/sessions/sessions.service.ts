@@ -1,10 +1,21 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { ProgressService } from '../progress/progress.service';
+import { QuestionGeneratorService } from './question-generator.service';
 import { localize } from '../common/utils/i18n';
 
 @Injectable()
 export class SessionsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private progressService: ProgressService,
+    private questionGenerator: QuestionGeneratorService,
+  ) {}
 
   async create(
     userId: string,
@@ -69,8 +80,144 @@ export class SessionsService {
       },
       questions: session.questions.map((q) => ({
         ...q,
-        questionText: localize(q.questionText, locale),
       })),
+    };
+  }
+
+  async start(sessionId: string, userId: string, locale: string = 'en') {
+    const session = await this.prisma.interviewSession.findUnique({
+      where: { id: sessionId },
+    });
+
+    if (!session) throw new NotFoundException('Session not found');
+    if (session.userId !== userId)
+      throw new ForbiddenException('Not your session');
+    if (session.status !== 'planned')
+      throw new BadRequestException(
+        `Cannot start session with status "${session.status}"`,
+      );
+
+    const questions = await this.questionGenerator.generate(
+      sessionId,
+      userId,
+      session.technologyLevelId,
+      session.totalQuestions ?? 10,
+      locale,
+    );
+
+    const updated = await this.prisma.interviewSession.update({
+      where: { id: sessionId },
+      data: {
+        status: 'in_progress',
+        startedAt: new Date(),
+        currentOrder: 1,
+        totalQuestions: questions.length,
+      },
+      include: {
+        technologyLevel: { include: { technology: true } },
+      },
+    });
+
+    return {
+      ...updated,
+      technologyLevel: {
+        ...updated.technologyLevel,
+        technology: {
+          ...updated.technologyLevel.technology,
+          description: localize(
+            updated.technologyLevel.technology.description,
+            locale,
+          ),
+        },
+      },
+      totalQuestions: questions.length,
+      currentQuestion: questions[0] ?? null,
+    };
+  }
+
+  async getCurrentQuestion(sessionId: string, userId: string) {
+    const session = await this.prisma.interviewSession.findUnique({
+      where: { id: sessionId },
+    });
+
+    if (!session) throw new NotFoundException('Session not found');
+    if (session.userId !== userId)
+      throw new ForbiddenException('Not your session');
+    if (session.status !== 'in_progress')
+      throw new BadRequestException('Session is not in progress');
+
+    const question = await this.prisma.interviewSessionQuestion.findFirst({
+      where: { sessionId, order: session.currentOrder },
+    });
+
+    if (!question) throw new NotFoundException('No question at current order');
+
+    return {
+      id: question.id,
+      questionId: question.questionId,
+      questionText: question.questionText,
+      difficulty: question.difficulty,
+      order: question.order,
+      totalQuestions: session.totalQuestions,
+    };
+  }
+
+  async skip(sessionId: string, userId: string) {
+    const session = await this.prisma.interviewSession.findUnique({
+      where: { id: sessionId },
+    });
+
+    if (!session) throw new NotFoundException('Session not found');
+    if (session.userId !== userId)
+      throw new ForbiddenException('Not your session');
+    if (session.status !== 'in_progress')
+      throw new BadRequestException('Session is not in progress');
+
+    const currentQuestion =
+      await this.prisma.interviewSessionQuestion.findFirst({
+        where: { sessionId, order: session.currentOrder },
+      });
+
+    if (!currentQuestion)
+      throw new NotFoundException('No question at current order');
+
+    if (currentQuestion.questionId) {
+      await this.progressService.updateQuestionProgress(
+        userId,
+        currentQuestion.questionId,
+        0,
+      );
+
+      const question = await this.prisma.question.findUnique({
+        where: { id: currentQuestion.questionId },
+      });
+      if (question) {
+        await this.progressService.recalcTopicProgress(
+          userId,
+          question.topicId,
+        );
+      }
+    }
+
+    const newOrder = session.currentOrder + 1;
+    const isFinished = newOrder > (session.totalQuestions ?? 0);
+
+    const updated = await this.prisma.interviewSession.update({
+      where: { id: sessionId },
+      data: {
+        currentOrder: newOrder,
+        ...(isFinished && {
+          status: 'completed',
+          finishedAt: new Date(),
+        }),
+      },
+    });
+
+    return {
+      skipped: true,
+      currentOrder: updated.currentOrder,
+      status: updated.status,
+      isFinished,
     };
   }
 }

@@ -26,6 +26,10 @@
 - **Frontend proxy**: Vite dev server proxies `/api` requests to `http://localhost:3000`, so backend must be running for the frontend to work.
 - **i18n fields**: `Technology.description`, `Topic.name`/`description`, `Question.text`/`explanation` are `Json` type with `{en: "...", ru: "..."}` structure. Use `localize()` from `common/utils/i18n.ts`. `Technology.name` is plain `VARCHAR` (not JSON).
 - **Pagination**: All list endpoints support `?skip=0&take=50` via `PaginationDto` from `common/dto/pagination.dto.ts`.
+- **UUID validation**: Required query params (`topicId`, `levelId`, `technologyLevelId`) and path params on session endpoints use `ParseUUIDPipe` for runtime validation.
+- **Session flow**: `POST /sessions` (create, status=planned) → `POST /sessions/:id/start` (generates questions, status=in_progress) → `GET /sessions/:id/current-question` → `POST /sessions/:id/skip` (score=0, advances). Session auto-completes when last question is skipped.
+- **ProgressModule**: Reusable service at `backend/src/progress/` for reading/writing `UserQuestionProgress` and `UserTopicProgress`. Used by SessionsModule (skip, future answer). Exported and importable by any module.
+- **QuestionGeneratorService**: Located in `backend/src/sessions/question-generator.service.ts`. Round-robin selection across topics from unanswered questions, fallback to lowest-mastery.
 
 ### Standard commands
 
