@@ -21,6 +21,35 @@ export interface GenerateQuestionContext {
   currentMastery: number;
 }
 
+export type AiTestOperation = 'evaluate' | 'generate';
+
+export interface AiProviderRegistration {
+  name: string;
+  modelId: string;
+  aliases: string[];
+  isDefault: boolean;
+}
+
+export interface AiModelTestResult {
+  requestedModel: string;
+  providerName: string;
+  modelId: string;
+  aliases: string[];
+  operation: AiTestOperation;
+  success: boolean;
+  latencyMs: number;
+  result?: EvaluationResult | string;
+  error?: string;
+}
+
+export interface AiModelTestSummary {
+  operation: AiTestOperation;
+  total: number;
+  passed: number;
+  failed: number;
+  results: AiModelTestResult[];
+}
+
 export const AI_PROVIDER = Symbol('AI_PROVIDER');
 
 export interface AiProvider {

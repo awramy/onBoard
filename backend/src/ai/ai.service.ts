@@ -3,6 +3,10 @@ import { GeminiProvider } from './providers/gemini.provider';
 import { OpenAiProvider } from './providers/openai.provider';
 import {
   AiProvider,
+  AiProviderRegistration,
+  AiModelTestResult,
+  AiModelTestSummary,
+  AiTestOperation,
   EvaluateAnswerContext,
   EvaluationResult,
   GenerateQuestionContext,
@@ -73,6 +77,16 @@ export class AiService {
     return [...new Set([...this.providers.values()].map((p) => p.name))];
   }
 
+  // AI-NOTE: Возвращает зарегистрированные модели с алиасами и признаком дефолтного провайдера
+  getProviderRegistrations(): AiProviderRegistration[] {
+    return this.getUniqueProviders().map((provider) => ({
+      name: provider.name,
+      modelId: provider.modelId,
+      aliases: this.getAliasesForProvider(provider),
+      isDefault: provider.name === this.defaultProviderName,
+    }));
+  }
+
   // AI-NOTE: Есть ли хотя бы один рабочий провайдер
   hasProviders(): boolean {
     return this.providers.size > 0;
@@ -96,5 +110,110 @@ export class AiService {
     const provider = this.getProvider(modelName);
     this.logger.debug(`Generating question text via ${provider.name}`);
     return provider.generateQuestionText(ctx);
+  }
+
+  // AI-NOTE: Прогоняет lightweight-запрос к одной или всем доступным моделям
+  async testModels(
+    modelName?: string,
+    operation: AiTestOperation = 'evaluate',
+  ): Promise<AiModelTestSummary> {
+    const providers = modelName
+      ? [this.getProvider(modelName)]
+      : this.getUniqueProviders();
+
+    const results = await Promise.all(
+      providers.map((provider) =>
+        this.runProviderTest(provider, operation, modelName),
+      ),
+    );
+
+    return {
+      operation,
+      total: results.length,
+      passed: results.filter((result) => result.success).length,
+      failed: results.filter((result) => !result.success).length,
+      results,
+    };
+  }
+
+  private getUniqueProviders(): AiProvider[] {
+    const uniqueProviders = new Map<string, AiProvider>();
+    for (const provider of this.providers.values()) {
+      uniqueProviders.set(`${provider.name}:${provider.modelId}`, provider);
+    }
+    return [...uniqueProviders.values()];
+  }
+
+  private getAliasesForProvider(provider: AiProvider): string[] {
+    return [...this.providers.entries()]
+      .filter(([, registeredProvider]) => registeredProvider === provider)
+      .map(([alias]) => alias)
+      .sort((left, right) => left.localeCompare(right));
+  }
+
+  private async runProviderTest(
+    provider: AiProvider,
+    operation: AiTestOperation,
+    requestedModel?: string,
+  ): Promise<AiModelTestResult> {
+    const startedAt = Date.now();
+
+    try {
+      const result =
+        operation === 'generate'
+          ? await provider.generateQuestionText({
+              originalQuestionText: 'What is HTTP?',
+              explanation:
+                'HTTP is a stateless application-layer protocol for request/response communication between clients and servers.',
+              previousAnswers: [
+                {
+                  text: 'HTTP is used by browsers and servers to exchange data.',
+                  feedback:
+                    'The answer is partially correct but misses protocol characteristics.',
+                  score: 60,
+                },
+              ],
+              currentMastery: 0.4,
+            })
+          : await provider.evaluateAnswer({
+              questionText: 'What is HTTP?',
+              questionExplanation:
+                'HTTP is a stateless application-layer protocol for request/response communication between clients and servers.',
+              answerText:
+                'HTTP is a stateless protocol used by browsers and servers to exchange requests and responses.',
+              previousAnswers: [],
+              isDivide: false,
+              currentMastery: 0.4,
+            });
+
+      return {
+        requestedModel: requestedModel ?? provider.modelId,
+        providerName: provider.name,
+        modelId: provider.modelId,
+        aliases: this.getAliasesForProvider(provider),
+        operation,
+        success: true,
+        latencyMs: Date.now() - startedAt,
+        result,
+      };
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Unknown AI provider error';
+
+      this.logger.warn(
+        `AI model test failed for ${provider.name} (${provider.modelId}): ${message}`,
+      );
+
+      return {
+        requestedModel: requestedModel ?? provider.modelId,
+        providerName: provider.name,
+        modelId: provider.modelId,
+        aliases: this.getAliasesForProvider(provider),
+        operation,
+        success: false,
+        latencyMs: Date.now() - startedAt,
+        error: message,
+      };
+    }
   }
 }
