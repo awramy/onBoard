@@ -55,8 +55,6 @@ export interface AiProviderHealthSummary {
   providers: AiProviderRegistration[];
 }
 
-export const AI_PROVIDER = Symbol('AI_PROVIDER');
-
 export interface AiProvider {
   readonly name: string;
   readonly modelId: string;
