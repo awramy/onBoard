@@ -9,6 +9,7 @@ import { QuestionsModule } from './questions/questions.module';
 import { UsersModule } from './users/users.module';
 import { SessionsModule } from './sessions/sessions.module';
 import { ProgressModule } from './progress/progress.module';
+import { AiModule } from './ai/ai.module';
 import { AppController } from './app.controller';
 
 @Module({
@@ -22,6 +23,7 @@ import { AppController } from './app.controller';
     QuestionsModule,
     UsersModule,
     ProgressModule,
+    AiModule,
     SessionsModule,
   ],
   controllers: [AppController],
