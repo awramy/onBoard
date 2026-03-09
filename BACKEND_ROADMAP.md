@@ -2,16 +2,29 @@
 
 ## Текущее состояние
 
-**Реализовано (8 эндпоинтов):**
+**Реализовано (19 эндпоинтов):**
 
 - `GET /api/health` — healthcheck
 - `POST /api/auth/register`, `POST /api/auth/login` — JWT-аутентификация
-- `GET /api/technologies`, `GET /api/technologies/:id` — технологии с уровнями и топиками
-- `POST /api/sessions`, `GET /api/sessions`, `GET /api/sessions/:id` — базовое CRUD сессий
+- `GET /api/technologies`, `GET /api/technologies/:id` — технологии с уровнями и топиками (с пагинацией, i18n, NotFoundException)
+- `GET /api/topics?levelId=<uuid>&lang=<locale>` — топики по уровню технологии (с пагинацией, i18n, count вопросов)
+- `GET /api/topics/:id?lang=<locale>` — детали топика с количеством вопросов
+- `GET /api/questions?topicId=<uuid>&lang=<locale>` — вопросы по топику без explanation (с пагинацией, i18n)
+- `GET /api/questions/:id?lang=<locale>` — вопрос с explanation
+- `GET /api/users/me` — профиль текущего пользователя
+- `GET /api/users` — список пользователей (лидерборд, с пагинацией)
+- `GET /api/users/me/progress` — агрегированный прогресс по технологиям → топикам
+- `GET /api/users/me/progress/topics?technologyLevelId=<uuid>` — прогресс по топикам уровня
+- `GET /api/users/me/progress/questions?topicId=<uuid>` — прогресс по вопросам топика (с пагинацией)
+- `POST /api/sessions`, `GET /api/sessions`, `GET /api/sessions/:id` — CRUD сессий (с пагинацией, i18n)
+
+**Общие улучшения (Фаза 1):**
+- Пагинация `skip`/`take` на всех списковых эндпоинтах через `PaginationDto`
+- `NotFoundException` на `GET /:id` эндпоинтах вместо `null`
+- Локализация (`?lang=ru|en`) для всех полей типа `Json` через `localize()`
 
 **Не реализовано:**
 
-- Нет отдельных эндпоинтов для топиков, вопросов, пользователей, прогресса
 - Нет механизма старта сессии и генерации вопросов
 - Нет подачи ответа и оценки через AI
 - Нет обновления прогресса (UserQuestionProgress, UserTopicProgress)
@@ -66,38 +79,39 @@ graph TD
 
 ---
 
-## Фаза 1 — CRUD-эндпоинты (основа для всех следующих фаз)
+## Фаза 1 — CRUD-эндпоинты ✅ ВЫПОЛНЕНО
 
 Создание модулей и ручек для работы с данными, которые уже есть в БД.
 
-### 1.1 TopicsModule
+### 1.1 TopicsModule ✅
 
-Новый модуль `backend/src/topics/`.
+Модуль `backend/src/topics/` — TopicsController, TopicsService, TopicsModule.
 
-- `GET /api/topics?levelId=<uuid>&lang=ru` — список топиков по `technologyLevelId`. Запрос через `TechnologyLevelTopic` join-таблицу. Локализация `name`/`description` через существующий `localize()` из `backend/src/common/utils/i18n.ts`.
-- `GET /api/topics/:id?lang=ru` — один топик с его вопросами (count).
+- ✅ `GET /api/topics?levelId=<uuid>&lang=ru` — список топиков по `technologyLevelId` с пагинацией и count вопросов.
+- ✅ `GET /api/topics/:id?lang=ru` — один топик с количеством вопросов и `NotFoundException`.
 
-### 1.2 QuestionsModule
+### 1.2 QuestionsModule ✅
 
-Новый модуль `backend/src/questions/`.
+Модуль `backend/src/questions/` — QuestionsController, QuestionsService, QuestionsModule.
 
-- `GET /api/questions?topicId=<uuid>&lang=ru` — список вопросов по `topicId`. Поля: id, text (локализован), type, difficulty. Без explanation (он нужен только после ответа).
-- `GET /api/questions/:id?lang=ru` — один вопрос с explanation.
+- ✅ `GET /api/questions?topicId=<uuid>&lang=ru` — список вопросов по topicId без explanation, с пагинацией.
+- ✅ `GET /api/questions/:id?lang=ru` — один вопрос с explanation и `NotFoundException`.
 
-### 1.3 UsersModule
+### 1.3 UsersModule ✅
 
-Новый модуль `backend/src/users/`.
+Модуль `backend/src/users/` — UsersController, UsersService, UsersModule.
 
-- `GET /api/users/me` — профиль текущего пользователя (id, email, username, fullScore, league, createdAt). Использует `@CurrentUser()` декоратор.
-- `GET /api/users` — список пользователей (admin-use, позже можно закрыть ролями). Поля: id, username, fullScore, league.
-- `GET /api/users/me/progress` — агрегированный прогресс: по технологиям -> топикам -> вопросам. Объединяет данные из `UserTopicProgress` и `UserQuestionProgress`.
-- `GET /api/users/me/progress/topics?technologyLevelId=<uuid>` — прогресс по топикам для конкретного уровня технологии.
-- `GET /api/users/me/progress/questions?topicId=<uuid>` — прогресс по вопросам конкретного топика.
+- ✅ `GET /api/users/me` — профиль текущего пользователя.
+- ✅ `GET /api/users` — список пользователей (лидерборд) с пагинацией, отсортирован по fullScore.
+- ✅ `GET /api/users/me/progress` — агрегированный прогресс: технологии → уровни → топики.
+- ✅ `GET /api/users/me/progress/topics?technologyLevelId=<uuid>` — прогресс по топикам уровня.
+- ✅ `GET /api/users/me/progress/questions?topicId=<uuid>` — прогресс по вопросам топика с пагинацией.
 
-### 1.4 Исправления в существующих модулях
+### 1.4 Исправления в существующих модулях ✅
 
-- `TechnologiesService.findOne()` — добавить `NotFoundException` вместо возврата `null`.
-- Рассмотреть добавление пагинации (`skip`/`take`) для списковых эндпоинтов.
+- ✅ `TechnologiesService.findOne()` — `NotFoundException` вместо возврата `null`.
+- ✅ Пагинация `skip`/`take` добавлена во все списковые эндпоинты через общий `PaginationDto`.
+- ✅ Исправлен импорт PrismaClient (`@prisma/client` вместо `.prisma/client`).
 
 ---
 
@@ -346,18 +360,29 @@ graph LR
 
 ## Ключевые файлы для изменения/создания
 
-**Новые модули:**
+**Созданные модули (Фаза 1):**
 
-- `backend/src/topics/` — TopicsModule, TopicsController, TopicsService
-- `backend/src/questions/` — QuestionsModule, QuestionsController, QuestionsService
-- `backend/src/users/` — UsersModule, UsersController, UsersService
+- ✅ `backend/src/topics/` — TopicsModule, TopicsController, TopicsService
+- ✅ `backend/src/questions/` — QuestionsModule, QuestionsController, QuestionsService
+- ✅ `backend/src/users/` — UsersModule, UsersController, UsersService
+- ✅ `backend/src/common/dto/pagination.dto.ts` — общий DTO для пагинации
+
+**Предстоящие модули (Фазы 2–6):**
+
 - `backend/src/progress/` — ProgressModule, ProgressService
 - `backend/src/ai/` — AiModule, AiService, провайдеры
 
-**Модификация существующих:**
+**Модифицированные файлы (Фаза 1):**
+
+- ✅ `backend/src/app.module.ts` — импорт TopicsModule, QuestionsModule, UsersModule
+- ✅ `backend/src/technologies/technologies.service.ts` — NotFoundException, пагинация
+- ✅ `backend/src/technologies/technologies.controller.ts` — пагинация
+- ✅ `backend/src/sessions/sessions.service.ts` — пагинация
+- ✅ `backend/src/sessions/sessions.controller.ts` — пагинация
+- ✅ `backend/src/prisma/prisma.service.ts` — исправлен импорт PrismaClient
+
+**Предстоящие модификации (Фазы 2–6):**
 
 - `backend/src/sessions/sessions.service.ts` — добавить start, answer, finish
 - `backend/src/sessions/sessions.controller.ts` — новые эндпоинты
-- `backend/src/app.module.ts` — импорт новых модулей
 - `backend/prisma/schema.prisma` — возможно добавление status в UserQuestionProgress
-- `backend/src/technologies/technologies.service.ts` — fix NotFoundException

@@ -17,6 +17,7 @@ import { SessionsService } from './sessions.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { CreateSessionDto } from './dto/create-session.dto';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @ApiTags('sessions')
 @ApiBearerAuth()
@@ -41,8 +42,14 @@ export class SessionsController {
   findAll(
     @CurrentUser() user: { id: string },
     @Query('lang') lang: string = 'en',
+    @Query() pagination: PaginationDto,
   ) {
-    return this.sessionsService.findAll(user.id, lang);
+    return this.sessionsService.findAll(
+      user.id,
+      lang,
+      pagination.skip ?? 0,
+      pagination.take ?? 50,
+    );
   }
 
   @Get(':id')
