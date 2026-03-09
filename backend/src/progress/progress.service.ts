@@ -5,18 +5,21 @@ import { PrismaService } from '../prisma/prisma.service';
 export class ProgressService {
   constructor(private prisma: PrismaService) {}
 
+  // AI-NOTE: Возвращает прогресс пользователя по конкретному вопросу (или null)
   async getQuestionProgress(userId: string, questionId: string) {
     return this.prisma.userQuestionProgress.findUnique({
       where: { userId_questionId: { userId, questionId } },
     });
   }
 
+  // AI-NOTE: Возвращает прогресс пользователя по конкретному топику (или null)
   async getTopicProgress(userId: string, topicId: string) {
     return this.prisma.userTopicProgress.findUnique({
       where: { userId_topicId: { userId, topicId } },
     });
   }
 
+  // AI-NOTE: Находит вопросы без прогресса для данного уровня технологии (для генерации сессии)
   async getUnansweredQuestions(userId: string, technologyLevelId: string) {
     const levelTopics = await this.prisma.technologyLevelTopic.findMany({
       where: { technologyLevelId },
@@ -46,6 +49,7 @@ export class ProgressService {
     });
   }
 
+  // AI-NOTE: Fallback — берёт вопросы с наименьшим mastery, когда все вопросы уже отвечены
   async getLowestMasteryQuestions(
     userId: string,
     technologyLevelId: string,
@@ -68,6 +72,7 @@ export class ProgressService {
     });
   }
 
+  // AI-NOTE: Upsert прогресса по вопросу — создаёт или обновляет, пересчитывает mastery
   async updateQuestionProgress(
     userId: string,
     questionId: string,
@@ -107,6 +112,7 @@ export class ProgressService {
     });
   }
 
+  // AI-NOTE: Пересчёт агрегированного score топика как среднее mastery всех его вопросов
   async recalcTopicProgress(userId: string, topicId: string) {
     const questions = await this.prisma.question.findMany({
       where: { topicId },

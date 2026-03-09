@@ -17,6 +17,7 @@ export class SessionsService {
     private questionGenerator: QuestionGeneratorService,
   ) {}
 
+  // AI-NOTE: Создаёт новую сессию со статусом "planned" и конфигом
   async create(
     userId: string,
     technologyLevelId: string,
@@ -33,6 +34,7 @@ export class SessionsService {
     });
   }
 
+  // AI-NOTE: Список всех сессий пользователя с локализацией описания технологии
   async findAll(userId: string, locale: string, skip = 0, take = 50) {
     const sessions = await this.prisma.interviewSession.findMany({
       where: { userId },
@@ -56,6 +58,7 @@ export class SessionsService {
     }));
   }
 
+  // AI-NOTE: Детали сессии с вопросами и ответами, проверяет принадлежность пользователю
   async findOne(id: string, userId: string, locale: string) {
     const session = await this.prisma.interviewSession.findFirst({
       where: { id, userId },
@@ -84,6 +87,7 @@ export class SessionsService {
     };
   }
 
+  // AI-NOTE: Запуск сессии — генерирует вопросы, переводит в in_progress, возвращает первый вопрос
   async start(sessionId: string, userId: string, locale: string = 'en') {
     const session = await this.prisma.interviewSession.findUnique({
       where: { id: sessionId },
@@ -135,6 +139,7 @@ export class SessionsService {
     };
   }
 
+  // AI-NOTE: Возвращает текущий вопрос сессии по currentOrder
   async getCurrentQuestion(sessionId: string, userId: string) {
     const session = await this.prisma.interviewSession.findUnique({
       where: { id: sessionId },
@@ -162,6 +167,7 @@ export class SessionsService {
     };
   }
 
+  // AI-NOTE: Пропуск вопроса — записывает score=0, пересчитывает прогресс, автозавершает сессию
   async skip(sessionId: string, userId: string) {
     const session = await this.prisma.interviewSession.findUnique({
       where: { id: sessionId },

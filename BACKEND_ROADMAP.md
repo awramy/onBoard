@@ -34,11 +34,17 @@
 - QuestionGeneratorService — round-robin алгоритм выбора вопросов из неотвеченных + fallback на low-mastery
 - Автоматическое завершение сессии при пропуске последнего вопроса
 
+**AI Core (Фаза 3):**
+- AiModule (@Global) — фасад `AiService` + провайдеры `GeminiProvider`, `OpenAiProvider`
+- Интерфейс `AiProvider` с методами `evaluateAnswer()` и `generateQuestionText()`
+- Динамическая смена модели: `session.config.model` → `"auto"` / `"gemini"` / `"openai"` / конкретная модель
+- Graceful degradation — провайдер без API-ключа помечается unavailable, сервер стартует без ошибок
+- Зависимости: `@google/genai`, `openai`
+
 **Не реализовано:**
 
-- Нет подачи ответа и оценки через AI
+- Нет подачи ответа и оценки через AI (эндпоинт `POST /api/sessions/:id/answer`)
 - Нет завершения сессии с подсчётом баллов (ручной finish/abandon)
-- Нет AI-интеграции (ни одного провайдера)
 - Redis подключён в Docker, но не используется в коде
 
 ## Архитектура (целевая)
@@ -174,11 +180,11 @@ graph TD
 
 ---
 
-## Фаза 3 — AI Core API
+## Фаза 3 — AI Core API ✅ ВЫПОЛНЕНО
 
-### 3.1 AiModule
+### 3.1 AiModule ✅
 
-Новый модуль `backend/src/ai/`.
+Новый модуль `backend/src/ai/` — `@Global`, экспортирует `AiService`.
 
 *На текущий момент в .env проекта подключен api_key для Gemini ( выбрать free tear модель для подключения - в .env есть переменные: GEMINI_API_KEY, (GEMINI_PROJECT_NAME, GEMINI_PROJECT_NUMBER - при необходимости))
 
@@ -186,13 +192,12 @@ graph TD
 
 ```
 ai/
-  ai.module.ts
+  ai.module.ts           — @Global модуль
   ai.service.ts          — фасад, выбирает провайдер по конфигу
-  ai.interfaces.ts       — AiProvider interface, типы запросов/ответов
+  ai.interfaces.ts       — AiProvider interface, типы запросов/ответов, системные промпты
   providers/
-    openai.provider.ts   — OpenAI (GPT-4o, GPT-4o-mini)
+    openai.provider.ts   — OpenAI (GPT-4o / GPT-4o-mini)
     gemini.provider.ts   — Google Gemini (2.0 Flash — бесплатный tier)
-    anthropic.provider.ts — Claude (опционально)
 ```
 
 **Интерфейс провайдера:**
@@ -219,26 +224,55 @@ interface EvaluationResult {
   isFullyClosed: boolean; // вопрос закрыт полностью
   recommendations: string[];
 }
+
+interface GenerateQuestionContext {
+  originalQuestionText: string;
+  explanation: string;
+  previousAnswers: { text: string; feedback: string; score: number }[];
+  currentMastery: number;
+}
 ```
 
-### 3.2 Динамическая смена модели
+### 3.2 Динамическая смена модели ✅
 
-- Конфиг модели хранится в `session.config.model` (например `"gemini-2.0-flash"`, `"gpt-4o-mini"`, `"auto"`)
-- `AiService.getProvider(modelName)` — возвращает нужный провайдер по имени
-- Режим `"auto"` — выбирает бесплатную модель по умолчанию
+- ✅ Конфиг модели хранится в `session.config.model` (например `"gemini-2.0-flash"`, `"gpt-4o-mini"`, `"auto"`)
+- ✅ `AiService.getProvider(modelName)` — возвращает нужный провайдер по имени
+- ✅ Режим `"auto"` — выбирает бесплатную модель по умолчанию (приоритет: Gemini → OpenAI)
+- ✅ `AiService.hasProviders()` и `AiService.getAvailableProviders()` — диагностика
+- ✅ Фасадные методы: `evaluateAnswer(ctx, modelName?)`, `generateQuestionText(ctx, modelName?)`
 
-### 3.3 Бесплатные модели — шаги подключения
+### 3.3 Провайдеры ✅
+
+- ✅ **GeminiProvider** — `@google/genai` → `GoogleGenAI`. Модель по умолчанию: `gemini-2.0-flash` (env: `GEMINI_MODEL`). API-ключ: `GEMINI_API_KEY`.
+- ✅ **OpenAiProvider** — `openai` → `OpenAI`. Модель по умолчанию: `gpt-4o-mini` (env: `OPENAI_MODEL`). API-ключ: `OPENAI_API_KEY`.
+- ✅ Graceful degradation: если API-ключ не задан, провайдер помечается `unavailable`, сервер стартует без ошибок.
+- ✅ JSON-парсинг ответов с fallback на сырой текст при ошибке парсинга.
+
+### 3.4 Бесплатные модели — шаги подключения
 
 Исследование рынка (на момент 2026):
 
 - **Google Gemini 2.0 Flash** — бесплатный tier через AI Studio API (15 RPM, 1M tokens/day). Лучший кандидат для MVP.
-  - Шаги: получить API key в Google AI Studio -> установить `@google/genai` -> реализовать `GeminiProvider`
+  - Шаги: получить API key в Google AI Studio → задать `GEMINI_API_KEY` в `.env`
 - **Groq** — бесплатный tier для open-source моделей (Llama 3, Mixtral). Высокая скорость.
-  - Шаги: регистрация на groq.com -> API key -> REST API (OpenAI-compatible)
+  - Шаги: регистрация на groq.com → API key → можно добавить как OpenAI-compatible провайдер
 - **OpenRouter** — агрегатор, некоторые модели бесплатны
-  - Шаги: регистрация -> API key -> OpenAI-compatible API
+  - Шаги: регистрация → API key → OpenAI-compatible API
 
 **Рекомендация для MVP**: начать с Gemini 2.0 Flash (бесплатно, достаточное качество для оценки ответов).
+
+### 3.5 Диагностика моделей ✅
+
+- ✅ Добавлен защищённый `AiController` с `GET /api/ai/providers` для просмотра зарегистрированных провайдеров, `modelId`, алиасов и default-маршрутизации.
+- ✅ Добавлен `POST /api/ai/test` для lightweight-проверки одной модели или всех доступных моделей через реальные вызовы `evaluateAnswer` или `generateQuestionText`.
+- ✅ `AiService` возвращает детальный summary по проверке: `success`, `latencyMs`, итог вызова или текст ошибки без падения всего endpoint.
+- ✅ Добавлены unit-тесты на диагностику, dedupe провайдеров по алиасам и обработку ошибок провайдера.
+
+### 3.6 Gemini Egress Mitigation ✅
+
+- ✅ Добавлен `GET /api/ai/egress` для диагностики outbound path Gemini: public IP, geo probe, DNS lookup, local interfaces, proxy mode, IPv4 preference.
+- ✅ `GeminiProvider` получил transport-конфиг через env: `GEMINI_PROXY_URL`, `GEMINI_BASE_URL`, `GEMINI_FORCE_IPV4`.
+- ✅ При `GEMINI_PROXY_URL` backend включает upstream через `undici` global dispatcher и логирует, что fetch-based трафик процесса идет через тот же proxy.
 
 ---
 
@@ -388,9 +422,13 @@ graph LR
 - ✅ `backend/src/progress/` — ProgressModule, ProgressService
 - ✅ `backend/src/sessions/question-generator.service.ts` — QuestionGeneratorService
 
-**Предстоящие модули (Фазы 3–6):**
+**Созданные модули (Фаза 3):**
 
-- `backend/src/ai/` — AiModule, AiService, провайдеры
+- ✅ `backend/src/ai/ai.module.ts` — @Global AiModule
+- ✅ `backend/src/ai/ai.service.ts` — AiService фасад
+- ✅ `backend/src/ai/ai.interfaces.ts` — интерфейсы и системные промпты
+- ✅ `backend/src/ai/providers/gemini.provider.ts` — GeminiProvider
+- ✅ `backend/src/ai/providers/openai.provider.ts` — OpenAiProvider
 
 **Модифицированные файлы (Фаза 1):**
 
@@ -408,7 +446,15 @@ graph LR
 - ✅ `backend/src/sessions/sessions.service.ts` — методы start, getCurrentQuestion, skip
 - ✅ `backend/src/sessions/sessions.controller.ts` — эндпоинты start, current-question, skip + ParseUUIDPipe
 
-**Предстоящие модификации (Фазы 3–6):**
+**Модифицированные файлы (Фаза 3):**
+
+- ✅ `backend/src/app.module.ts` — импорт AiModule
+- ✅ `backend/.env` — добавлены `GEMINI_API_KEY`, `OPENAI_API_KEY`
+- ✅ `backend/src/progress/progress.service.ts` — AI-NOTE комментарии
+- ✅ `backend/src/sessions/question-generator.service.ts` — AI-NOTE комментарии
+- ✅ `backend/src/sessions/sessions.service.ts` — AI-NOTE комментарии
+
+**Предстоящие модификации (Фазы 4–6):**
 
 - `backend/src/sessions/sessions.service.ts` — добавить answer, finish, abandon
 - `backend/src/sessions/sessions.controller.ts` — новые эндпоинты answer, finish, abandon

@@ -17,6 +17,7 @@ export class QuestionGeneratorService {
     private progressService: ProgressService,
   ) {}
 
+  // AI-NOTE: Round-robin генерация вопросов для сессии — сначала неотвеченные, потом low-mastery
   async generate(
     sessionId: string,
     userId: string,
