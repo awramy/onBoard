@@ -71,8 +71,10 @@ backend/
 - **GET `/api/sessions/:id/current-question`** — текущий вопрос сессии (текст, сложность, порядок).
 - **POST `/api/sessions/:id/answer`** — подача ответа: AI-оценка, обновление прогресса, переход к следующему вопросу. Принимает `{ answerText: string }`, возвращает `{ answerId, score, feedback, isFullyClosed, recommendations, nextQuestion? }`. Модель AI выбирается из `session.config.model`.
 - **POST `/api/sessions/:id/skip`** — пропуск вопроса (score = 0, прогресс записывается).
+- **POST `/api/sessions/:id/finish`** — ручное завершение сессии: подсчёт avgScore по всем ответам, обновление `User.fullScore` и `league`. Возвращает `{ sessionId, questionsAnswered, avgScore, sessionScore, newFullScore, newLeague }`.
+- **POST `/api/sessions/:id/abandon`** — досрочное завершение (status = `abandoned`). Прогресс по уже отвеченным вопросам сохраняется.
 
-Сессия автоматически завершается (status = `completed`) при ответе или пропуске последнего вопроса. Все маршруты доступны только авторизованному пользователю.
+Сессия автоматически завершается (status = `completed`) при ответе или пропуске последнего вопроса. Ручное завершение через `finish` или `abandon` доступно для сессий в статусе `in_progress`. Все маршруты доступны только авторизованному пользователю.
 
 ### 4. AI Core
 

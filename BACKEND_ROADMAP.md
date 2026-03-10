@@ -2,7 +2,7 @@
 
 ## Текущее состояние
 
-**Реализовано (23 эндпоинта):**
+**Реализовано (25 эндпоинтов):**
 
 - `GET /api/health` — healthcheck
 - `POST /api/auth/register`, `POST /api/auth/login` — JWT-аутентификация
@@ -21,6 +21,8 @@
 - `GET /api/sessions/:id/current-question` — текущий вопрос сессии
 - `POST /api/sessions/:id/skip` — пропуск вопроса (score = 0, прогресс записывается)
 - `POST /api/sessions/:id/answer` — подача ответа с AI-оценкой, обновлением прогресса и автозавершением
+- `POST /api/sessions/:id/finish` — завершение сессии с подсчётом баллов, обновлением fullScore и league
+- `POST /api/sessions/:id/abandon` — досрочное завершение (status = abandoned), прогресс сохраняется
 
 **Общие улучшения (Фаза 1):**
 
@@ -51,9 +53,14 @@
 - Автозавершение сессии (status = 'completed') при ответе на последний вопрос
 - Модель AI выбирается из session.config.model (по умолчанию "auto")
 
+**Завершение сессии и скоринг (Фаза 5):**
+- `POST /api/sessions/:id/finish` — завершение in_progress сессии, подсчёт avgScore по всем InterviewAnswer
+- Обновление User.fullScore += sessionScore и пересчёт league (bronze/silver/gold/platinum)
+- `POST /api/sessions/:id/abandon` — досрочное завершение, status = 'abandoned', прогресс сохраняется
+- Защита от повторного вызова finish/abandon на уже завершённой/брошенной сессии
+
 **Не реализовано:**
 
-- Нет завершения сессии с подсчётом баллов (ручной finish/abandon)
 - Redis подключён в Docker, но не используется в коде
 
 ## Архитектура (целевая)
@@ -337,28 +344,40 @@ Body: { answerText: string }
 
 ---
 
-## Фаза 5 — Завершение сессии и скоринг
+## Фаза 5 — Завершение сессии и скоринг ✅ ВЫПОЛНЕНО
 
-### 5.1 Завершение сессии
+### 5.1 Завершение сессии ✅
 
 `POST /api/sessions/:id/finish`
 
 ```
-1. Обновить session: status = 'completed', finishedAt = now()
-2. Подсчитать суммарный балл за сессию (avg score по всем answers)
-3. Обновить User.fullScore += sessionScore
-4. Пересчитать league:
+Алгоритм (реализован в SessionsService.finish()):
+1. Валидация: session.status === 'in_progress', userId совпадает
+2. Получить все InterviewAnswer для данной сессии
+3. Подсчитать avgScore = round(sum(score) / count)
+4. sessionScore = avgScore
+5. Обновить session: status = 'completed', finishedAt = now()
+6. Обновить User.fullScore += sessionScore
+7. Пересчитать league через computeLeague():
    - bronze: 0-99
    - silver: 100-499
    - gold: 500-999
    - platinum: 1000+
-   (конкретные пороги — конфигурируемые)
-5. Вернуть: summary { totalScore, questionsAnswered, avgScore, newLeague? }
+8. Вернуть: { sessionId, status, totalQuestions, questionsAnswered, avgScore, sessionScore, newFullScore, newLeague }
 ```
 
-### 5.2 Досрочное завершение
+- ✅ `ParseUUIDPipe` на `:id`, JWT-аутентификация
+- ✅ Защита от повторного finish (400 для не-in_progress)
+- ✅ `computeLeague()` — статический метод с конфигурируемыми порогами
 
-`POST /api/sessions/:id/abandon` — статус `abandoned`, finishedAt = now(), прогресс по отвеченным вопросам сохраняется.
+### 5.2 Досрочное завершение ✅
+
+`POST /api/sessions/:id/abandon`
+
+- ✅ Устанавливает status = `'abandoned'`, finishedAt = now()
+- ✅ Прогресс по отвеченным/пропущенным вопросам сохраняется (UserQuestionProgress не затрагивается)
+- ✅ Возвращает `{ sessionId, status }`
+- ✅ Защита от повторного abandon (400 для не-in_progress)
 
 ---
 
@@ -474,7 +493,12 @@ graph LR
 - ✅ `backend/src/sessions/sessions.service.ts` — метод `answer()`, инъекция `AiService`
 - ✅ `backend/src/sessions/sessions.controller.ts` — эндпоинт `POST :id/answer`
 
-**Предстоящие модификации (Фазы 5–6):**
+**Модифицированные файлы (Фаза 5):**
 
-- `backend/src/sessions/sessions.service.ts` — добавить finish, abandon
-- `backend/src/sessions/sessions.controller.ts` — новые эндпоинты finish, abandon
+- ✅ `backend/src/sessions/sessions.service.ts` — методы `finish()`, `abandon()`, `computeLeague()`
+- ✅ `backend/src/sessions/sessions.controller.ts` — эндпоинты `POST :id/finish`, `POST :id/abandon`
+- ✅ `backend/src/sessions/sessions.service.spec.ts` — unit-тесты finish/abandon/computeLeague (16 новых тестов)
+
+**Предстоящие модификации (Фаза 6):**
+
+- `backend/src/sessions/question-generator.service.ts` — AI-генерация текста для in_progress вопросов

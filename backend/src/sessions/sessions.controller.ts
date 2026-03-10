@@ -107,4 +107,26 @@ export class SessionsController {
   ) {
     return this.sessionsService.answer(id, user.id, dto.answerText);
   }
+
+  @Post(':id/finish')
+  @ApiOperation({
+    summary: 'Finish session — compute score, update user league',
+  })
+  finish(
+    @CurrentUser() user: { id: string },
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.sessionsService.finish(id, user.id);
+  }
+
+  @Post(':id/abandon')
+  @ApiOperation({
+    summary: 'Abandon session early — progress on answered questions is kept',
+  })
+  abandon(
+    @CurrentUser() user: { id: string },
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.sessionsService.abandon(id, user.id);
+  }
 }

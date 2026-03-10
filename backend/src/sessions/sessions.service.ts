@@ -386,4 +386,96 @@ export class SessionsService {
       nextQuestion,
     };
   }
+
+  async finish(sessionId: string, userId: string) {
+    const session = await this.prisma.interviewSession.findUnique({
+      where: { id: sessionId },
+    });
+
+    if (!session) throw new NotFoundException('Session not found');
+    if (session.userId !== userId)
+      throw new ForbiddenException('Not your session');
+    if (session.status !== 'in_progress')
+      throw new BadRequestException(
+        `Cannot finish session with status "${session.status}"`,
+      );
+
+    const answers = await this.prisma.interviewAnswer.findMany({
+      where: { sessionQuestion: { sessionId } },
+      select: { score: true },
+    });
+
+    const questionsAnswered = answers.length;
+    const avgScore =
+      questionsAnswered > 0
+        ? Math.round(
+            answers.reduce((sum, a) => sum + a.score, 0) / questionsAnswered,
+          )
+        : 0;
+    const sessionScore = avgScore;
+
+    const updated = await this.prisma.interviewSession.update({
+      where: { id: sessionId },
+      data: { status: 'completed', finishedAt: new Date() },
+    });
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+    const newFullScore = (user?.fullScore ?? 0) + sessionScore;
+    const newLeague = SessionsService.computeLeague(newFullScore);
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { fullScore: newFullScore, league: newLeague },
+    });
+
+    this.logger.debug(
+      `Session finished: id=${sessionId} avgScore=${avgScore} fullScore=${newFullScore} league=${newLeague}`,
+    );
+
+    return {
+      sessionId: updated.id,
+      status: updated.status,
+      totalQuestions: updated.totalQuestions ?? 0,
+      questionsAnswered,
+      avgScore,
+      sessionScore,
+      newFullScore,
+      newLeague,
+    };
+  }
+
+  async abandon(sessionId: string, userId: string) {
+    const session = await this.prisma.interviewSession.findUnique({
+      where: { id: sessionId },
+    });
+
+    if (!session) throw new NotFoundException('Session not found');
+    if (session.userId !== userId)
+      throw new ForbiddenException('Not your session');
+    if (session.status !== 'in_progress')
+      throw new BadRequestException(
+        `Cannot abandon session with status "${session.status}"`,
+      );
+
+    const updated = await this.prisma.interviewSession.update({
+      where: { id: sessionId },
+      data: { status: 'abandoned', finishedAt: new Date() },
+    });
+
+    this.logger.debug(`Session abandoned: id=${sessionId}`);
+
+    return {
+      sessionId: updated.id,
+      status: updated.status,
+    };
+  }
+
+  static computeLeague(fullScore: number): string {
+    if (fullScore >= 1000) return 'platinum';
+    if (fullScore >= 500) return 'gold';
+    if (fullScore >= 100) return 'silver';
+    return 'bronze';
+  }
 }

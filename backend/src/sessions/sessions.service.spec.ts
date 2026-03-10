@@ -351,3 +351,185 @@ describe('SessionsService.answer', () => {
     );
   });
 });
+
+describe('SessionsService.finish', () => {
+  it('computes avg score, updates user fullScore and league', async () => {
+    const prisma = {
+      interviewSession: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValue(makeSession({ totalQuestions: 3 })),
+        update: jest
+          .fn()
+          .mockResolvedValue(
+            makeSession({ status: 'completed', finishedAt: new Date() }),
+          ),
+      },
+      interviewAnswer: {
+        findMany: jest
+          .fn()
+          .mockResolvedValue([{ score: 80 }, { score: 60 }, { score: 100 }]),
+      },
+      user: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValue({ id: USER_ID, fullScore: 50, league: 'bronze' }),
+        update: jest.fn().mockResolvedValue({}),
+      },
+    };
+
+    const service = buildService({ prisma });
+    const result = await service.finish(SESSION_ID, USER_ID);
+
+    expect(result.questionsAnswered).toBe(3);
+    expect(result.avgScore).toBe(80);
+    expect(result.sessionScore).toBe(80);
+    expect(result.newFullScore).toBe(130);
+    expect(result.newLeague).toBe('silver');
+    expect(result.status).toBe('completed');
+
+    expect(prisma.interviewSession.update).toHaveBeenCalledWith({
+      where: { id: SESSION_ID },
+      data: expect.objectContaining({ status: 'completed' }) as Record<
+        string,
+        unknown
+      >,
+    });
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: USER_ID },
+      data: { fullScore: 130, league: 'silver' },
+    });
+  });
+
+  it('handles session with no answers (score = 0)', async () => {
+    const prisma = {
+      interviewSession: {
+        findUnique: jest.fn().mockResolvedValue(makeSession()),
+        update: jest
+          .fn()
+          .mockResolvedValue(makeSession({ status: 'completed' })),
+      },
+      interviewAnswer: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+      user: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValue({ id: USER_ID, fullScore: 10, league: 'bronze' }),
+        update: jest.fn().mockResolvedValue({}),
+      },
+    };
+
+    const service = buildService({ prisma });
+    const result = await service.finish(SESSION_ID, USER_ID);
+
+    expect(result.questionsAnswered).toBe(0);
+    expect(result.avgScore).toBe(0);
+    expect(result.newFullScore).toBe(10);
+    expect(result.newLeague).toBe('bronze');
+  });
+
+  it('throws BadRequestException for non in_progress session', async () => {
+    const prisma = {
+      interviewSession: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValue(makeSession({ status: 'planned' })),
+      },
+    };
+    const service = buildService({ prisma });
+    await expect(service.finish(SESSION_ID, USER_ID)).rejects.toThrow(
+      BadRequestException,
+    );
+  });
+
+  it('throws NotFoundException when session not found', async () => {
+    const prisma = {
+      interviewSession: { findUnique: jest.fn().mockResolvedValue(null) },
+    };
+    const service = buildService({ prisma });
+    await expect(service.finish(SESSION_ID, USER_ID)).rejects.toThrow(
+      NotFoundException,
+    );
+  });
+
+  it('throws ForbiddenException for wrong user', async () => {
+    const prisma = {
+      interviewSession: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValue(makeSession({ userId: 'other-user' })),
+      },
+    };
+    const service = buildService({ prisma });
+    await expect(service.finish(SESSION_ID, USER_ID)).rejects.toThrow(
+      ForbiddenException,
+    );
+  });
+});
+
+describe('SessionsService.abandon', () => {
+  it('sets status to abandoned and finishedAt', async () => {
+    const prisma = {
+      interviewSession: {
+        findUnique: jest.fn().mockResolvedValue(makeSession()),
+        update: jest
+          .fn()
+          .mockResolvedValue(
+            makeSession({ status: 'abandoned', finishedAt: new Date() }),
+          ),
+      },
+    };
+
+    const service = buildService({ prisma });
+    const result = await service.abandon(SESSION_ID, USER_ID);
+
+    expect(result.status).toBe('abandoned');
+    expect(prisma.interviewSession.update).toHaveBeenCalledWith({
+      where: { id: SESSION_ID },
+      data: expect.objectContaining({ status: 'abandoned' }) as Record<
+        string,
+        unknown
+      >,
+    });
+  });
+
+  it('throws BadRequestException for non in_progress session', async () => {
+    const prisma = {
+      interviewSession: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValue(makeSession({ status: 'completed' })),
+      },
+    };
+    const service = buildService({ prisma });
+    await expect(service.abandon(SESSION_ID, USER_ID)).rejects.toThrow(
+      BadRequestException,
+    );
+  });
+
+  it('throws NotFoundException when session not found', async () => {
+    const prisma = {
+      interviewSession: { findUnique: jest.fn().mockResolvedValue(null) },
+    };
+    const service = buildService({ prisma });
+    await expect(service.abandon(SESSION_ID, USER_ID)).rejects.toThrow(
+      NotFoundException,
+    );
+  });
+});
+
+describe('SessionsService.computeLeague', () => {
+  it.each([
+    [0, 'bronze'],
+    [99, 'bronze'],
+    [100, 'silver'],
+    [499, 'silver'],
+    [500, 'gold'],
+    [999, 'gold'],
+    [1000, 'platinum'],
+    [5000, 'platinum'],
+  ])('fullScore %i → %s', (score, expected) => {
+    expect(SessionsService.computeLeague(score)).toBe(expected);
+  });
+});
