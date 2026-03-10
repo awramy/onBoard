@@ -18,6 +18,7 @@ import { SessionsService } from './sessions.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { CreateSessionDto } from './dto/create-session.dto';
+import { AnswerQuestionDto } from './dto/answer-question.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
 
 @ApiTags('sessions')
@@ -93,5 +94,17 @@ export class SessionsController {
     @Param('id', ParseUUIDPipe) id: string,
   ) {
     return this.sessionsService.skip(id, user.id);
+  }
+
+  @Post(':id/answer')
+  @ApiOperation({
+    summary: 'Submit an answer; AI evaluates, updates progress, advances',
+  })
+  answer(
+    @CurrentUser() user: { id: string },
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AnswerQuestionDto,
+  ) {
+    return this.sessionsService.answer(id, user.id, dto.answerText);
   }
 }

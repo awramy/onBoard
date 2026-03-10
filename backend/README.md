@@ -64,11 +64,15 @@ backend/
 
 ### 3. Сессии собеседований
 
-- **POST `/api/sessions`** — создать сессию: привязка к пользователю, к уровню технологии (`technologyLevelId`) и опциональному `config` (формат, количество вопросов и т.п.).
+- **POST `/api/sessions`** — создать сессию: привязка к пользователю, к уровню технологии (`technologyLevelId`) и опциональному `config` (формат, количество вопросов, модель AI и т.п.).
 - **GET `/api/sessions`** — список сессий текущего пользователя.
 - **GET `/api/sessions/:id`** — детали сессии (вопросы, ответы, уровень, технология).
+- **POST `/api/sessions/:id/start`** — запуск сессии: генерация вопросов, перевод в `in_progress`.
+- **GET `/api/sessions/:id/current-question`** — текущий вопрос сессии (текст, сложность, порядок).
+- **POST `/api/sessions/:id/answer`** — подача ответа: AI-оценка, обновление прогресса, переход к следующему вопросу. Принимает `{ answerText: string }`, возвращает `{ answerId, score, feedback, isFullyClosed, recommendations, nextQuestion? }`. Модель AI выбирается из `session.config.model`.
+- **POST `/api/sessions/:id/skip`** — пропуск вопроса (score = 0, прогресс записывается).
 
-Все маршруты сессий доступны только авторизованному пользователю; выборка по `userId` из JWT.
+Сессия автоматически завершается (status = `completed`) при ответе или пропуске последнего вопроса. Все маршруты доступны только авторизованному пользователю.
 
 ### 4. AI Core
 
@@ -95,7 +99,7 @@ backend/
 - **InterviewSession** — сессия собеседования (user, technologyLevel, config, status, totalQuestions, даты).
 - **InterviewSessionQuestion** — вопрос в рамках сессии (порядок, текст, сложность).
 - **InterviewAnswer** — ответ пользователя (текст, AI feedback, score).
-- **UserQuestionProgress** / **UserTopicProgress** — прогресс по вопросам и темам (для будущего расширения).
+- **UserQuestionProgress** / **UserTopicProgress** — прогресс по вопросам и темам (mastery, attempts, scores).
 
 ---
 

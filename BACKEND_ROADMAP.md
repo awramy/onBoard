@@ -2,7 +2,7 @@
 
 ## Текущее состояние
 
-**Реализовано (22 эндпоинта):**
+**Реализовано (23 эндпоинта):**
 
 - `GET /api/health` — healthcheck
 - `POST /api/auth/register`, `POST /api/auth/login` — JWT-аутентификация
@@ -20,6 +20,7 @@
 - `POST /api/sessions/:id/start` — запуск сессии с генерацией вопросов
 - `GET /api/sessions/:id/current-question` — текущий вопрос сессии
 - `POST /api/sessions/:id/skip` — пропуск вопроса (score = 0, прогресс записывается)
+- `POST /api/sessions/:id/answer` — подача ответа с AI-оценкой, обновлением прогресса и автозавершением
 
 **Общие улучшения (Фаза 1):**
 
@@ -41,9 +42,17 @@
 - Graceful degradation — провайдер без API-ключа помечается unavailable, сервер стартует без ошибок
 - Зависимости: `@google/genai`, `openai`
 
+**Ответ + AI-оценка (Фаза 4):**
+- `POST /api/sessions/:id/answer` — подача ответа кандидата, AI-оценка через AiService
+- Полный контекст передаётся в AI: текст вопроса, explanation, isDivide, предыдущие ответы, текущий mastery
+- Автоматическое обновление UserQuestionProgress и UserTopicProgress после каждого ответа
+- Поддержка isDivide — предыдущие ответы sessionQuestion передаются для контекстной оценки
+- Если AI определяет isFullyClosed — mastery устанавливается в 1.0
+- Автозавершение сессии (status = 'completed') при ответе на последний вопрос
+- Модель AI выбирается из session.config.model (по умолчанию "auto")
+
 **Не реализовано:**
 
-- Нет подачи ответа и оценки через AI (эндпоинт `POST /api/sessions/:id/answer`)
 - Нет завершения сессии с подсчётом баллов (ручной finish/abandon)
 - Redis подключён в Docker, но не используется в коде
 
@@ -276,54 +285,55 @@ interface GenerateQuestionContext {
 
 ---
 
-## Фаза 4 — Процесс ответа на вопрос (ядро продукта)
+## Фаза 4 — Процесс ответа на вопрос (ядро продукта) ✅ ВЫПОЛНЕНО
 
-### 4.1 Подача ответа
+### 4.1 Подача ответа ✅
 
 `POST /api/sessions/:id/answer`
 
 ```
 Body: { answerText: string }
 
-Алгоритм:
+Алгоритм (реализован в SessionsService.answer()):
 1. Валидация: session.status === 'in_progress', userId совпадает
-2. Получить текущий InterviewSessionQuestion (по currentOrder)
+2. Получить текущий InterviewSessionQuestion (по currentOrder) с answers
 3. Получить оригинальный Question (для explanation, isDivide)
 4. Получить предыдущие InterviewAnswer для этого sessionQuestion (если isDivide)
 5. Получить UserQuestionProgress (текущий mastery)
 6. Вызвать AiService.evaluateAnswer() с полным контекстом
 7. Создать InterviewAnswer (answerText, aiFeedback, score)
-8. Обновить UserQuestionProgress:
+8. Обновить UserQuestionProgress через ProgressService.updateQuestionProgress():
    - attemptsCount++
    - totalScore += score
    - lastScore = score
-   - mastery = пересчёт (формула: weightedAverage или AI-решение)
+   - mastery = min(totalScore / (attempts * 100), 1.0)
    - lastAnsweredAt = now()
-9. Если AI определил isFullyClosed — mastery = 1.0
-10. Обновить UserTopicProgress (пересчёт по всем вопросам топика)
+9. Если AI определил isFullyClosed — mastery принудительно = 1.0
+10. Обновить UserTopicProgress через ProgressService.recalcTopicProgress()
 11. Увеличить session.currentOrder++
-12. Если currentOrder > totalQuestions — вызвать логику завершения
-13. Вернуть: { score, feedback, isFullyClosed, nextQuestion? }
+12. Если currentOrder > totalQuestions — автоматическое завершение (status = 'completed')
+13. Вернуть: { answerId, score, feedback, isFullyClosed, recommendations, currentOrder, status, isFinished, nextQuestion? }
 ```
 
-### 4.2 Логика isDivide
+- ✅ Модель AI берётся из `session.config.model` (по умолчанию `"auto"`)
+- ✅ Валидация через `AnswerQuestionDto` (`@IsString()`, `@MinLength(1)`)
+- ✅ `ParseUUIDPipe` на `:id` параметре
+- ✅ JWT-аутентификация через `JwtAuthGuard`
+
+### 4.2 Логика isDivide ✅
 
 Для вопросов с `isDivide = true`:
 
-- Вопрос может быть частично закрыт (mastery между 0 и 1)
-- При выборе такого вопроса для сессии (если он in_progress), AI генерирует уточняющий текст
-- Предыдущие ответы передаются в контекст AI для формирования оценки
-- Цель — каждый уточняющий вопрос охватывает незакрытые аспекты
+- ✅ Предыдущие ответы (`InterviewAnswer[]`) для данного `sessionQuestion` передаются в контекст AI
+- ✅ AI учитывает все предыдущие ответы при оценке полноты раскрытия вопроса
+- ✅ При `isFullyClosed = true` mastery устанавливается в 1.0 независимо от формулы
 
-### 4.3 Статус вопроса (расширение схемы)
+### 4.3 Статус вопроса (решение)
 
-Рассмотреть добавление поля `status` в `UserQuestionProgress`:
-
-- `open` — вопрос ещё не задавался
-- `in_progress` — частично закрыт (mastery > 0 и < threshold)
-- `closed` — полностью закрыт (mastery >= threshold или AI решил)
-
-Это потребует миграцию Prisma. Альтернатива — вычислять статус на лету из mastery.
+Выбрана альтернатива **без миграции** — статус вычисляется на лету из mastery:
+- `mastery === 0` → open (нет прогресса / все попытки с score 0)
+- `0 < mastery < 1.0` → in_progress
+- `mastery === 1.0` → closed (AI подтвердил полное раскрытие или набрана максимальная оценка)
 
 ---
 
@@ -454,9 +464,17 @@ graph LR
 - ✅ `backend/src/sessions/question-generator.service.ts` — AI-NOTE комментарии
 - ✅ `backend/src/sessions/sessions.service.ts` — AI-NOTE комментарии
 
-**Предстоящие модификации (Фазы 4–6):**
+**Созданные файлы (Фаза 4):**
 
-- `backend/src/sessions/sessions.service.ts` — добавить answer, finish, abandon
-- `backend/src/sessions/sessions.controller.ts` — новые эндпоинты answer, finish, abandon
-- `backend/prisma/schema.prisma` — возможно добавление status в UserQuestionProgress
+- ✅ `backend/src/sessions/dto/answer-question.dto.ts` — DTO для подачи ответа
+- ✅ `backend/src/sessions/sessions.service.spec.ts` — unit-тесты answer flow (8 тестов)
 
+**Модифицированные файлы (Фаза 4):**
+
+- ✅ `backend/src/sessions/sessions.service.ts` — метод `answer()`, инъекция `AiService`
+- ✅ `backend/src/sessions/sessions.controller.ts` — эндпоинт `POST :id/answer`
+
+**Предстоящие модификации (Фазы 5–6):**
+
+- `backend/src/sessions/sessions.service.ts` — добавить finish, abandon
+- `backend/src/sessions/sessions.controller.ts` — новые эндпоинты finish, abandon
