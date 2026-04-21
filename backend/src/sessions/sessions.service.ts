@@ -70,7 +70,7 @@ export class SessionsService {
       include: {
         technologyLevel: { include: { technology: true } },
         questions: {
-          include: { 
+          include: {
             answers: { orderBy: { createdAt: 'asc' } },
             question: {
               select: {
@@ -117,12 +117,16 @@ export class SessionsService {
         `Cannot start session with status "${session.status}"`,
       );
 
+    const sessionConfig = session.config as Record<string, unknown>;
+    const modelName = (sessionConfig?.model as string) ?? 'auto';
+
     const questions = await this.questionGenerator.generate(
       sessionId,
       userId,
       session.technologyLevelId,
       session.totalQuestions ?? 10,
       locale,
+      modelName,
     );
 
     const updated = await this.prisma.interviewSession.update({
@@ -323,6 +327,7 @@ export class SessionsService {
         sessionQuestionId: sessionQuestion.id,
         answerText,
         aiFeedback: evaluation.feedback,
+        recommendations: evaluation.recommendations ?? [],
         score: evaluation.score,
       },
     });

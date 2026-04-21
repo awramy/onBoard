@@ -38,6 +38,7 @@
 - Автоматическое завершение сессии при пропуске последнего вопроса
 
 **AI Core (Фаза 3):**
+
 - AiModule (@Global) — фасад `AiService` + провайдеры `GeminiProvider`, `OpenAiProvider`
 - Интерфейс `AiProvider` с методами `evaluateAnswer()` и `generateQuestionText()`
 - Динамическая смена модели: `session.config.model` → `"auto"` / `"gemini"` / `"openai"` / конкретная модель
@@ -45,6 +46,7 @@
 - Зависимости: `@google/genai`, `openai`
 
 **Ответ + AI-оценка (Фаза 4):**
+
 - `POST /api/sessions/:id/answer` — подача ответа кандидата, AI-оценка через AiService
 - Полный контекст передаётся в AI: текст вопроса, explanation, isDivide, предыдущие ответы, текущий mastery
 - Автоматическое обновление UserQuestionProgress и UserTopicProgress после каждого ответа
@@ -54,6 +56,7 @@
 - Модель AI выбирается из session.config.model (по умолчанию "auto")
 
 **Завершение сессии и скоринг (Фаза 5):**
+
 - `POST /api/sessions/:id/finish` — завершение in_progress сессии, подсчёт avgScore по всем InterviewAnswer
 - Обновление User.fullScore += sessionScore и пересчёт league (bronze/silver/gold/platinum)
 - `POST /api/sessions/:id/abandon` — досрочное завершение, status = 'abandoned', прогресс сохраняется
@@ -107,8 +110,6 @@ graph TD
   UsersCtrl --> UsersSvc
   UsersCtrl --> ProgressSvc
 ```
-
-
 
 ---
 
@@ -338,6 +339,7 @@ Body: { answerText: string }
 ### 4.3 Статус вопроса (решение)
 
 Выбрана альтернатива **без миграции** — статус вычисляется на лету из mastery:
+
 - `mastery === 0` → open (нет прогресса / все попытки с score 0)
 - `0 < mastery < 1.0` → in_progress
 - `mastery === 1.0` → closed (AI подтвердил полное раскрытие или набрана максимальная оценка)
@@ -383,31 +385,130 @@ Body: { answerText: string }
 
 ## Фаза 6 — AI-генерация текста вопроса
 
-### 6.1 Генерация уточняющего текста
+### 6.0 Анализ сущностей БД и план (актуализация)
 
-При старте сессии (фаза 2), если вопрос имеет статус `in_progress`:
-
-```
-1. Получить историю InterviewAnswer для этого userId + questionId
-2. Получить ai_feedback из предыдущих ответов
-3. Вызвать AiService.generateQuestionText():
-   - Контекст: оригинальный текст вопроса, explanation, история ответов с feedback
-   - Цель: сформулировать вопрос так, чтобы он охватил незакрытые моменты
-   - Ожидание: один полный ответ должен закрыть вопрос
-4. Использовать сгенерированный текст как questionText в InterviewSessionQuestion
-```
-
-### 6.2 Обновление QuestionGeneratorService
-
-Расширить алгоритм из фазы 2:
+**Как сохраняется история вопрос→ответ.** Прямой связи между `InterviewAnswer` и `User`/`Question` в схеме нет. История собирается через цепочку:
 
 ```
-Для каждого выбранного вопроса:
-  if (вопрос.status === 'in_progress'):
-    questionText = await aiService.generateQuestionText(контекст)
-  else:
-    questionText = localize(question.text, locale)
+InterviewAnswer.sessionQuestionId
+  → InterviewSessionQuestion (questionId, sessionId)
+    → InterviewSession (userId)
+    → Question
 ```
+
+Все попытки пользователя по одному вопросу можно получить запросом:
+
+```ts
+prisma.interviewAnswer.findMany({
+  where: { sessionQuestion: { questionId, session: { userId } } },
+  orderBy: { createdAt: 'asc' },
+});
+```
+
+**Критерий «вопрос уже задавался и не закрыт».** Ориентируемся на `UserQuestionProgress.mastery`:
+
+- `mastery === 0` или записи нет → вопрос задаётся в оригинале (`localize(question.text, locale)`).
+- `0 < mastery < 1` → вопрос требует уточняющей формулировки через AI.
+- `mastery === 1` (AI закрыл или набрана максимальная оценка) → в выборку такой вопрос уже не попадает.
+
+**Критический gap.** Сейчас `InterviewAnswer` хранит только `answerText`, `aiFeedback`, `score`. Поле `recommendations` из `EvaluationResult` **теряется**, хотя именно оно отмечает незакрытые моменты ответа. Для качественной генерации уточняющего вопроса нужно:
+
+1. Добавить в `InterviewAnswer` поле `recommendations Json?` (массив строк) и сохранять его в `SessionsService.answer()`.
+2. Построить ручку для получения полной истории попыток пользователя по `questionId`.
+3. Только после этого расширять `QuestionGeneratorService` AI-генерацией.
+
+### 6.1 Миграция БД — `InterviewAnswer.recommendations`
+
+- Расширить модель `InterviewAnswer`:
+
+```prisma
+model InterviewAnswer {
+  // ... существующие поля
+  recommendations Json?
+}
+```
+
+- Новая миграция `20260422_add_interview_answer_recommendations`.
+- `SessionsService.answer()` сохраняет `evaluation.recommendations` в новом поле, остальная логика (mastery, recalc) не меняется.
+
+### 6.2 Эндпоинт истории ответов пользователя по вопросу
+
+`GET /api/users/me/questions/:questionId/history?lang=<locale>`
+
+Алгоритм (`UsersService.getQuestionAnswerHistory`):
+
+1. Найти `Question` по `questionId` с `NotFoundException` при отсутствии.
+2. Получить `UserQuestionProgress` для `(userId, questionId)` — агрегаты (`mastery`, `attemptsCount`, `totalScore`, `lastScore`, `lastAnsweredAt`).
+3. Получить все `InterviewAnswer`, где `sessionQuestion.questionId === questionId` и `session.userId === userId`, отсортированные по `createdAt ASC`; включить `sessionQuestion.session` (`sessionId`, `createdAt`) и сам `questionText` (он мог отличаться от оригинала — для AI-уточнённых вопросов).
+4. Вернуть:
+
+```ts
+{
+  question: { id, text: localized, type, difficulty, isDivide },
+  progress: { attemptsCount, totalScore, lastScore, mastery, lastAnsweredAt } | null,
+  attempts: Array<{
+    answerId, sessionId, sessionQuestionId,
+    questionText,           // то, что реально задавали пользователю (могло быть уточнённым)
+    answerText, score, feedback, recommendations,
+    createdAt,
+  }>;
+}
+```
+
+Эндпоинт защищён `JwtAuthGuard`, `:questionId` валидируется `ParseUUIDPipe`.
+
+### 6.3 AI-генерация уточняющего текста в `QuestionGeneratorService`
+
+**Контракт обновляется:**
+
+```ts
+interface GenerateQuestionContext {
+  originalQuestionText: string;
+  explanation: string;
+  previousAnswers: Array<{
+    text: string;
+    feedback: string;
+    recommendations: string[];   // новое — незакрытые моменты
+    score: number;
+  }>;
+  currentMastery: number;
+}
+```
+
+**Алгоритм генерации (для каждого выбранного вопроса):**
+
+```
+1. progress = UserQuestionProgress(userId, questionId)
+2. Если progress отсутствует ИЛИ progress.mastery === 0 ИЛИ AI недоступен:
+     questionText = localize(question.text, locale)
+3. Иначе (0 < mastery < 1):
+   a. attempts = InterviewAnswer[] пользователя по questionId (через join), последние N (≈5)
+   b. ctx.previousAnswers = attempts.map(text/feedback/score/recommendations)
+   c. questionText = await aiService.generateQuestionText(ctx, session.config.model)
+   d. При ошибке AI — fallback на оригинал + warn в лог
+4. Создать InterviewSessionQuestion c questionText
+```
+
+- Метод генерации выносится во вспомогательный `QuestionGeneratorService.resolveQuestionText()` для переиспользования и тестирования.
+- `AiService.hasProviders()` используется как быстрая проверка доступности.
+
+### 6.4 Обновление промпта `QUESTION_GEN_SYSTEM_PROMPT`
+
+Добавить явное требование:
+
+- Сформулировать один follow-up вопрос так, чтобы он закрывал наибольший gap из `recommendations` и общего низкого `score`.
+- Не повторять уже раскрытое в предыдущих ответах.
+- Ограничение по языку: язык оригинального вопроса / последнего ответа.
+
+### 6.5 Тесты
+
+- `sessions.service.spec.ts` — `answer()` записывает `recommendations` в `InterviewAnswer.create`.
+- `question-generator.service.spec.ts` — новый файл:
+  - вопрос без прогресса → `localize()`, AI не вызывается;
+  - вопрос с `mastery ∈ (0;1)` → `aiService.generateQuestionText` вызывается с историей + recommendations;
+  - AI бросает ошибку → fallback на `localize()`, сессия создаётся;
+  - нет зарегистрированных провайдеров → AI не вызывается.
+- `users.service.spec.ts` (опционально) — `getQuestionAnswerHistory` корректно собирает attempts из разных сессий.
 
 ---
 
@@ -430,8 +531,6 @@ graph LR
   P2 --> P6
   P5 --> P6
 ```
-
-
 
 Фазы 1 и 3 можно начинать параллельно. Фазы 4-6 зависят от предыдущих.
 
@@ -501,4 +600,12 @@ graph LR
 
 **Предстоящие модификации (Фаза 6):**
 
-- `backend/src/sessions/question-generator.service.ts` — AI-генерация текста для in_progress вопросов
+- `backend/prisma/schema.prisma` — поле `InterviewAnswer.recommendations Json?`
+- `backend/prisma/migrations/<timestamp>_add_interview_answer_recommendations/` — миграция
+- `backend/src/sessions/sessions.service.ts` — сохранение `evaluation.recommendations`
+- `backend/src/users/users.service.ts` — метод `getQuestionAnswerHistory`
+- `backend/src/users/users.controller.ts` — эндпоинт `GET /api/users/me/questions/:questionId/history`
+- `backend/src/ai/ai.interfaces.ts` — расширение `GenerateQuestionContext` и `QUESTION_GEN_SYSTEM_PROMPT`
+- `backend/src/sessions/question-generator.service.ts` — AI-генерация уточняющего текста для вопросов с `0 < mastery < 1`, fallback на `localize`
+- `backend/src/sessions/question-generator.service.spec.ts` — новые unit-тесты
+- `backend/src/sessions/sessions.service.spec.ts` — тесты на сохранение `recommendations`

@@ -77,7 +77,9 @@ export class AiService {
         `AI provider "${name}" is not available. Configured: [${[...this.providers.keys()].join(', ')}]`,
       );
     }
-    this.logger.debug(`Using AI provider: ${provider.name} (${provider.modelId})`);
+    this.logger.debug(
+      `Using AI provider: ${provider.name} (${provider.modelId})`,
+    );
     return provider;
   }
 

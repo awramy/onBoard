@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Param,
   ParseUUIDPipe,
   Query,
   UseGuards,
@@ -9,6 +10,7 @@ import {
   ApiTags,
   ApiBearerAuth,
   ApiOperation,
+  ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
 import { UsersService } from './users.service';
@@ -67,6 +69,25 @@ export class UsersController {
       lang,
       pagination.skip ?? 0,
       pagination.take ?? 50,
+    );
+  }
+
+  @Get('me/questions/:questionId/history')
+  @ApiOperation({
+    summary:
+      'Get full answer history of the current user for a specific question',
+  })
+  @ApiParam({ name: 'questionId', required: true })
+  @ApiQuery({ name: 'lang', required: false, example: 'en' })
+  getQuestionAnswerHistory(
+    @CurrentUser() user: { id: string },
+    @Param('questionId', ParseUUIDPipe) questionId: string,
+    @Query('lang') lang: string = 'en',
+  ) {
+    return this.usersService.getQuestionAnswerHistory(
+      user.id,
+      questionId,
+      lang,
     );
   }
 

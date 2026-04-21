@@ -37,6 +37,7 @@ function makeSession(overrides?: Record<string, unknown>) {
     currentOrder: 1,
     totalQuestions: 3,
     config: {},
+    technologyLevel: { difficulty: 'middle' },
     ...overrides,
   };
 }
@@ -127,6 +128,7 @@ describe('SessionsService.answer', () => {
         sessionQuestionId: SQ_ID,
         answerText: 'My answer',
         score: 80,
+        recommendations: ['study caching'],
       }) as Record<string, unknown>,
     });
     expect(progress.updateQuestionProgress).toHaveBeenCalledWith(

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { localize } from '../common/utils/i18n';
 
@@ -178,5 +178,84 @@ export class UsersService {
         lastAnsweredAt: p?.lastAnsweredAt ?? null,
       };
     });
+  }
+
+  // AI-NOTE: Полная история попыток пользователя по одному вопросу — нужна для AI-генерации
+  // уточняющего текста (фаза 6) и для отображения истории на фронте.
+  // InterviewAnswer связан с User/Question только через InterviewSessionQuestion → InterviewSession.
+  async getQuestionAnswerHistory(
+    userId: string,
+    questionId: string,
+    locale: string,
+  ) {
+    const question = await this.prisma.question.findUnique({
+      where: { id: questionId },
+      select: {
+        id: true,
+        text: true,
+        type: true,
+        difficulty: true,
+        isDivide: true,
+        topicId: true,
+      },
+    });
+    if (!question) throw new NotFoundException('Question not found');
+
+    const progress = await this.prisma.userQuestionProgress.findUnique({
+      where: { userId_questionId: { userId, questionId } },
+    });
+
+    const answers = await this.prisma.interviewAnswer.findMany({
+      where: {
+        sessionQuestion: {
+          questionId,
+          session: { userId },
+        },
+      },
+      include: {
+        sessionQuestion: {
+          select: {
+            id: true,
+            sessionId: true,
+            questionText: true,
+            order: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    return {
+      question: {
+        id: question.id,
+        text: localize(question.text, locale),
+        type: question.type,
+        difficulty: question.difficulty,
+        isDivide: question.isDivide ?? false,
+      },
+      progress: progress
+        ? {
+            attemptsCount: progress.attemptsCount,
+            totalScore: progress.totalScore,
+            lastScore: progress.lastScore,
+            mastery: progress.mastery,
+            lastAnsweredAt: progress.lastAnsweredAt,
+          }
+        : null,
+      attempts: answers.map((a) => ({
+        answerId: a.id,
+        sessionId: a.sessionQuestion.sessionId,
+        sessionQuestionId: a.sessionQuestion.id,
+        order: a.sessionQuestion.order,
+        questionText: a.sessionQuestion.questionText,
+        answerText: a.answerText,
+        feedback: a.aiFeedback,
+        recommendations: Array.isArray(a.recommendations)
+          ? (a.recommendations as string[])
+          : [],
+        score: a.score,
+        createdAt: a.createdAt,
+      })),
+    };
   }
 }

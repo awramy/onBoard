@@ -19,8 +19,14 @@ export interface EvaluationResult {
 export interface GenerateQuestionContext {
   originalQuestionText: string;
   explanation: string;
-  previousAnswers: { text: string; feedback: string; score: number }[];
+  previousAnswers: {
+    text: string;
+    feedback: string;
+    score: number;
+    recommendations?: string[];
+  }[];
   currentMastery: number;
+  locale?: string;
 }
 
 export type AiTestOperation = 'evaluate' | 'generate';
@@ -106,11 +112,18 @@ Do not restate the full question or provide tutorial-style explanations.
 Output a single raw JSON object only — no markdown fences, no code blocks, no text before or after the JSON.`;
 
 export const QUESTION_GEN_SYSTEM_PROMPT = `You are a technical interview question generator.
-Given an original question, its explanation, and previous answer history, generate a follow-up question
-that covers aspects the candidate has not yet demonstrated understanding of.
+Given an original question, its explanation, previous answer history (with feedback + recommendations),
+generate a single follow-up question that targets the biggest remaining knowledge gap.
 
-Respond with ONLY the question text, no extra formatting.
-Keep the same language as the original question.
-Return exactly one concise follow-up question.
-Focus on the single biggest knowledge gap.
-Keep it under 20 words and avoid multi-part questions.`;
+Priorities (highest first):
+1. Points explicitly listed in the "recommendations" of the latest previous answers (these are the unresolved gaps).
+2. Topics flagged as missing in "feedback" of previous answers.
+3. Aspects of the original "explanation" (Reference) not yet demonstrated by the candidate.
+
+Hard rules:
+- Respond with ONLY the question text. No preamble, no quotes, no code fences.
+- Ask exactly one concise follow-up question. No multi-part "and/or" questions.
+- Stay within the scope of the original question — do NOT introduce unrelated topics.
+- Do NOT repeat aspects that were clearly covered in previous answers.
+- Preserve the language of the original question (LocaleHint, if provided, takes precedence).
+- Keep it under 20 words and formulate it so that one complete answer would close the gap.`;

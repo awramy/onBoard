@@ -137,6 +137,7 @@ model InterviewAnswer {
   sessionQuestionId String   @map("session_question_id") @db.Uuid
   answerText        String   @map("answer_text") @db.Text
   aiFeedback        String   @map("ai_feedback") @db.Text
+  recommendations   Json?
   score             Int
   createdAt         DateTime @default(now()) @map("created_at")
 

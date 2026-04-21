@@ -48,23 +48,72 @@ export abstract class BaseAiProvider implements AiProvider {
     return prompt;
   }
 
-  // AI-NOTE: Формирует промпт для генерации уточняющего вопроса
+  // AI-NOTE: Формирует промпт для генерации уточняющего вопроса.
+  // Recommendations последних попыток — приоритетный источник "незакрытых моментов" для follow-up.
   protected buildQuestionGenPrompt(ctx: GenerateQuestionContext): string {
     let prompt = `Original question: ${this.truncateText(ctx.originalQuestionText, BaseAiProvider.MAX_QUESTION_LENGTH)}\n`;
     prompt += `Reference: ${this.truncateText(ctx.explanation, BaseAiProvider.MAX_EXPLANATION_LENGTH)}\n`;
     prompt += `Mastery: ${ctx.currentMastery}\n`;
+    if (ctx.locale) {
+      prompt += `LocaleHint: ${ctx.locale}\n`;
+    }
 
     if (ctx.previousAnswers.length) {
-      prompt += `\nPrevious answers:\n`;
+      prompt += `\nPrevious answers (oldest → latest):\n`;
       for (const pa of ctx.previousAnswers.slice(
         -BaseAiProvider.MAX_PREVIOUS_ANSWERS,
       )) {
-        prompt += `- score=${pa.score}; answer=${this.truncateText(pa.text, BaseAiProvider.MAX_ANSWER_LENGTH)}; feedback=${this.truncateText(pa.feedback, BaseAiProvider.MAX_PREVIOUS_FEEDBACK_LENGTH)}\n`;
+        prompt += `- score=${pa.score}; answer=${this.truncateText(pa.text, BaseAiProvider.MAX_ANSWER_LENGTH)}; feedback=${this.truncateText(pa.feedback, BaseAiProvider.MAX_PREVIOUS_FEEDBACK_LENGTH)}`;
+        const recs = pa.recommendations
+          ?.slice(0, BaseAiProvider.MAX_RECOMMENDATIONS)
+          .map((rec) =>
+            this.truncateText(rec, BaseAiProvider.MAX_RECOMMENDATION_LENGTH),
+          )
+          .filter(Boolean);
+        if (recs?.length) {
+          prompt += `; recommendations=${recs.join(' | ')}`;
+        }
+        prompt += `\n`;
+      }
+
+      const latestRecommendations = this.collectLatestRecommendations(
+        ctx.previousAnswers,
+      );
+      if (latestRecommendations.length) {
+        prompt += `\nUnresolved gaps (from recommendations, most recent first):\n`;
+        for (const rec of latestRecommendations) {
+          prompt += `- ${rec}\n`;
+        }
       }
     }
 
-    prompt += `\nAsk one short follow-up question about the biggest remaining gap.`;
+    prompt += `\nAsk one short follow-up question focused on the biggest remaining gap.`;
     return prompt;
+  }
+
+  private collectLatestRecommendations(
+    previousAnswers: GenerateQuestionContext['previousAnswers'],
+  ): string[] {
+    const collected: string[] = [];
+    const seen = new Set<string>();
+    for (let i = previousAnswers.length - 1; i >= 0; i--) {
+      const recs = previousAnswers[i].recommendations ?? [];
+      for (const rec of recs) {
+        const normalized = this.truncateText(
+          rec,
+          BaseAiProvider.MAX_RECOMMENDATION_LENGTH,
+        );
+        if (!normalized) continue;
+        const key = normalized.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        collected.push(normalized);
+        if (collected.length >= BaseAiProvider.MAX_RECOMMENDATIONS * 2) {
+          return collected;
+        }
+      }
+    }
+    return collected;
   }
 
   // AI-NOTE: Парсит JSON-ответ от модели, возвращает дефолтный результат при ошибке парсинга
@@ -82,8 +131,7 @@ export abstract class BaseAiProvider implements AiProvider {
       }
     }
 
-    const preview =
-      text.length > 500 ? `${text.slice(0, 500)}…` : text;
+    const preview = text.length > 500 ? `${text.slice(0, 500)}…` : text;
     this.logger.warn(`Failed to parse AI response: ${preview}`);
     return {
       score: 0,
@@ -93,7 +141,9 @@ export abstract class BaseAiProvider implements AiProvider {
     };
   }
 
-  private mapParsedEvaluation(parsed: Record<string, unknown>): EvaluationResult {
+  private mapParsedEvaluation(
+    parsed: Record<string, unknown>,
+  ): EvaluationResult {
     const recs = parsed.recommendations;
     return {
       score: Math.max(0, Math.min(100, Number(parsed.score) || 0)),
