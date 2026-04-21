@@ -17,7 +17,7 @@ import {
 export class AiService {
   private readonly providers = new Map<string, AiProvider>();
   private readonly logger = new Logger(AiService.name);
-  private defaultProviderName: string = 'openai';
+  private defaultProviderName: string = 'gemini';
 
   constructor(
     private geminiProvider: GeminiProvider,
@@ -52,9 +52,9 @@ export class AiService {
         'No AI providers configured — set GEMINI_API_KEY or OPENAI_API_KEY',
       );
     } else {
-      this.defaultProviderName = this.providers.has('openai')
-        ? 'openai'
-        : 'gemini';
+      this.defaultProviderName = this.providers.has('gemini')
+        ? 'gemini'
+        : 'openai';
       this.logger.log(`Default AI provider: ${this.defaultProviderName}`);
     }
   }

@@ -51,6 +51,30 @@ describe('BaseAiProvider response compaction', () => {
     ]);
   });
 
+  it('parses JSON wrapped in markdown fences (Gemini-style)', () => {
+    const result = provider.parse(`\`\`\`json
+{
+  "score": 88,
+  "feedback": "Covers the basics well.",
+  "isFullyClosed": true,
+  "recommendations": ["Add caching"]
+}
+\`\`\``);
+
+    expect(result.score).toBe(88);
+    expect(result.feedback).toBe('Covers the basics well.');
+    expect(result.isFullyClosed).toBe(true);
+    expect(result.recommendations).toEqual(['Add caching']);
+  });
+
+  it('parses JSON after a short preamble', () => {
+    const result = provider.parse(`Here is the evaluation:
+{"score": 55, "feedback": "Partial.", "isFullyClosed": false, "recommendations": []}`);
+
+    expect(result.score).toBe(55);
+    expect(result.feedback).toBe('Partial.');
+  });
+
   it('reduces generated output to one concise question', () => {
     expect(
       provider.finalizeQuestion(

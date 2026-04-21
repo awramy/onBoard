@@ -19,7 +19,8 @@ import {
 @Injectable()
 export class GeminiProvider extends BaseAiProvider {
   readonly name = 'gemini';
-  private static readonly EVALUATE_MAX_OUTPUT_TOKENS = 180;
+  /** Достаточно для полного JSON-ответа (score, feedback, recommendations); малый лимит обрезал вывод и ломал парсинг. */
+  private static readonly EVALUATE_MAX_OUTPUT_TOKENS = 640;
   private static readonly GENERATE_MAX_OUTPUT_TOKENS = 60;
   private client: GoogleGenAI | null = null;
   protected readonly logger = new Logger(GeminiProvider.name);

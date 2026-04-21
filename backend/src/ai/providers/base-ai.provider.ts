@@ -67,32 +67,114 @@ export abstract class BaseAiProvider implements AiProvider {
 
   // AI-NOTE: Парсит JSON-ответ от модели, возвращает дефолтный результат при ошибке парсинга
   protected parseEvaluationResponse(text: string): EvaluationResult {
-    try {
-      const cleaned = text.replace(/```json\n?|```\n?/g, '').trim();
-      const parsed = JSON.parse(cleaned) as Record<string, unknown>;
-      const recs = parsed.recommendations;
-      return {
-        score: Math.max(0, Math.min(100, Number(parsed.score) || 0)),
-        feedback: this.compactFeedback(
-          typeof parsed.feedback === 'string' ? parsed.feedback : '',
-        ),
-        isFullyClosed: Boolean(parsed.isFullyClosed),
-        recommendations: Array.isArray(recs)
-          ? recs
-              .map((value) => this.compactRecommendation(String(value)))
-              .filter(Boolean)
-              .slice(0, BaseAiProvider.MAX_RECOMMENDATIONS)
-          : [],
-      };
-    } catch {
-      this.logger.warn(`Failed to parse AI response: ${text}`);
-      return {
-        score: 0,
-        feedback: this.compactFeedback(text || 'Failed to evaluate answer'),
-        isFullyClosed: false,
-        recommendations: [],
-      };
+    const candidates = BaseAiProvider.collectEvaluationJsonCandidates(text);
+    const seen = new Set<string>();
+    for (const candidate of candidates) {
+      if (seen.has(candidate)) continue;
+      seen.add(candidate);
+      try {
+        const parsed = JSON.parse(candidate) as Record<string, unknown>;
+        return this.mapParsedEvaluation(parsed);
+      } catch {
+        /* пробуем следующий вариант */
+      }
     }
+
+    const preview =
+      text.length > 500 ? `${text.slice(0, 500)}…` : text;
+    this.logger.warn(`Failed to parse AI response: ${preview}`);
+    return {
+      score: 0,
+      feedback: this.compactFeedback(text || 'Failed to evaluate answer'),
+      isFullyClosed: false,
+      recommendations: [],
+    };
+  }
+
+  private mapParsedEvaluation(parsed: Record<string, unknown>): EvaluationResult {
+    const recs = parsed.recommendations;
+    return {
+      score: Math.max(0, Math.min(100, Number(parsed.score) || 0)),
+      feedback: this.compactFeedback(
+        typeof parsed.feedback === 'string' ? parsed.feedback : '',
+      ),
+      isFullyClosed: Boolean(parsed.isFullyClosed),
+      recommendations: Array.isArray(recs)
+        ? recs
+            .map((value) => this.compactRecommendation(String(value)))
+            .filter(Boolean)
+            .slice(0, BaseAiProvider.MAX_RECOMMENDATIONS)
+        : [],
+    };
+  }
+
+  /** Кандидаты на парсинг: снятие markdown-ограждений, извлечение первого JSON-объекта по скобкам (устойчиво к преамбуле). */
+  private static collectEvaluationJsonCandidates(text: string): string[] {
+    const out: string[] = [];
+    const push = (s: string | null | undefined) => {
+      const t = s?.trim();
+      if (t) out.push(t);
+    };
+
+    push(BaseAiProvider.stripEvaluationMarkdownFences(text));
+    push(text.replace(/```json\n?|```\n?/gi, '').trim());
+    push(BaseAiProvider.extractFirstJsonObject(text));
+    push(
+      BaseAiProvider.extractFirstJsonObject(
+        BaseAiProvider.stripEvaluationMarkdownFences(text),
+      ),
+    );
+
+    return out;
+  }
+
+  private static stripEvaluationMarkdownFences(raw: string): string {
+    let s = raw.replace(/^\uFEFF/, '').trim();
+    const fullFence = /^```(?:json)?\s*\r?\n?([\s\S]*?)\r?\n?```\s*$/i.exec(s);
+    if (fullFence) {
+      return fullFence[1].trim();
+    }
+    s = s
+      .replace(/^```(?:json)?\s*\r?\n?/i, '')
+      .replace(/\r?\n?```\s*$/i, '')
+      .trim();
+    return s;
+  }
+
+  /** Первый сбалансированный `{ ... }` с учётом строк и escape — для ответов с преамбулой или частичным fence. */
+  private static extractFirstJsonObject(text: string): string | null {
+    const start = text.indexOf('{');
+    if (start === -1) {
+      return null;
+    }
+    let depth = 0;
+    let inString = false;
+    let escape = false;
+    for (let i = start; i < text.length; i++) {
+      const c = text[i];
+      if (escape) {
+        escape = false;
+        continue;
+      }
+      if (c === '\\' && inString) {
+        escape = true;
+        continue;
+      }
+      if (c === '"') {
+        inString = !inString;
+        continue;
+      }
+      if (!inString) {
+        if (c === '{') depth++;
+        else if (c === '}') {
+          depth--;
+          if (depth === 0) {
+            return text.slice(start, i + 1);
+          }
+        }
+      }
+    }
+    return null;
   }
 
   protected finalizeGeneratedQuestion(text: string): string {

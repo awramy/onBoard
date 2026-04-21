@@ -85,7 +85,8 @@ Set isFullyClosed=true only when the topic is comprehensively covered.
 Keep feedback to at most 2 short sentences.
 Return 0-2 recommendations only.
 Each recommendation must be brief, concrete, and no more than 8 words.
-Do not restate the full question or provide tutorial-style explanations.`;
+Do not restate the full question or provide tutorial-style explanations.
+Output a single raw JSON object only — no markdown fences, no code blocks, no text before or after the JSON.`;
 
 export const QUESTION_GEN_SYSTEM_PROMPT = `You are a technical interview question generator.
 Given an original question, its explanation, and previous answer history, generate a follow-up question
