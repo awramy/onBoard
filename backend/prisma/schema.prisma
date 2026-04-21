@@ -85,7 +85,7 @@ model Question {
   type        String   @default("theory") @db.VarChar(20)
   difficulty  Int
   explanation Json?
-  isDivide    Boolean? @map("is_devide")
+  isDivide    Boolean? @map("is_divide")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
 

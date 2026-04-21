@@ -17,7 +17,9 @@ import {
 export class AiService {
   private readonly providers = new Map<string, AiProvider>();
   private readonly logger = new Logger(AiService.name);
-  private defaultProviderName: string = 'gemini';
+  // AI-NOTE: Читается из AI_DEFAULT_PROVIDER env; если не задан — openai
+  private defaultProviderName: string =
+    process.env.AI_DEFAULT_PROVIDER || 'openai';
 
   constructor(
     private geminiProvider: GeminiProvider,
@@ -52,9 +54,14 @@ export class AiService {
         'No AI providers configured — set GEMINI_API_KEY or OPENAI_API_KEY',
       );
     } else {
-      this.defaultProviderName = this.providers.has('gemini')
-        ? 'gemini'
-        : 'openai';
+      // AI-NOTE: Если запрошенный дефолтный провайдер недоступен — берём первый зарегистрированный
+      if (!this.providers.has(this.defaultProviderName)) {
+        const fallback = [...this.providers.keys()][0];
+        this.logger.warn(
+          `Default provider "${this.defaultProviderName}" is not available, falling back to "${fallback}"`,
+        );
+        this.defaultProviderName = fallback;
+      }
       this.logger.log(`Default AI provider: ${this.defaultProviderName}`);
     }
   }
@@ -70,6 +77,7 @@ export class AiService {
         `AI provider "${name}" is not available. Configured: [${[...this.providers.keys()].join(', ')}]`,
       );
     }
+    this.logger.debug(`Using AI provider: ${provider.name} (${provider.modelId})`);
     return provider;
   }
 

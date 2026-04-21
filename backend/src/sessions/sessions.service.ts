@@ -70,7 +70,14 @@ export class SessionsService {
       include: {
         technologyLevel: { include: { technology: true } },
         questions: {
-          include: { answers: { orderBy: { createdAt: 'asc' } } },
+          include: { 
+            answers: { orderBy: { createdAt: 'asc' } },
+            question: {
+              select: {
+                isDivide: true,
+              },
+            },
+          },
           orderBy: { order: 'asc' },
         },
       },
@@ -89,8 +96,9 @@ export class SessionsService {
           ),
         },
       },
-      questions: session.questions.map((q) => ({
+      questions: session.questions.map(({ question, ...q }) => ({
         ...q,
+        isDivide: question?.isDivide ?? false,
       })),
     };
   }
@@ -161,6 +169,13 @@ export class SessionsService {
 
     const question = await this.prisma.interviewSessionQuestion.findFirst({
       where: { sessionId, order: session.currentOrder },
+      include: {
+        question: {
+          select: {
+            isDivide: true,
+          },
+        },
+      },
     });
 
     if (!question) throw new NotFoundException('No question at current order');
@@ -170,6 +185,7 @@ export class SessionsService {
       questionId: question.questionId,
       questionText: question.questionText,
       difficulty: question.difficulty,
+      isDivide: question.question?.isDivide ?? false,
       order: question.order,
       totalQuestions: session.totalQuestions,
     };
@@ -238,6 +254,7 @@ export class SessionsService {
   async answer(sessionId: string, userId: string, answerText: string) {
     const session = await this.prisma.interviewSession.findUnique({
       where: { id: sessionId },
+      include: { technologyLevel: true },
     });
 
     if (!session) throw new NotFoundException('Session not found');
@@ -295,6 +312,8 @@ export class SessionsService {
         previousAnswers,
         isDivide,
         currentMastery,
+        difficulty: session.technologyLevel.difficulty,
+        questionDifficulty: sessionQuestion.difficulty,
       },
       modelName,
     );
@@ -354,11 +373,19 @@ export class SessionsService {
       questionText: string;
       difficulty: number;
       order: number;
+      isDivide: boolean;
     } | null = null;
 
     if (!isFinished) {
       const next = await this.prisma.interviewSessionQuestion.findFirst({
         where: { sessionId, order: newOrder },
+        include: {
+          question: {
+            select: {
+              isDivide: true,
+            },
+          },
+        },
       });
       if (next) {
         nextQuestion = {
@@ -366,6 +393,7 @@ export class SessionsService {
           questionText: next.questionText,
           difficulty: next.difficulty,
           order: next.order,
+          isDivide: next.question?.isDivide ?? false,
         };
       }
     }

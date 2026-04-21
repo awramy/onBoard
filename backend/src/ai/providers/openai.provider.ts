@@ -38,17 +38,21 @@ export class OpenAiProvider extends BaseAiProvider {
 
     const userPrompt = this.buildEvaluationPrompt(ctx);
 
-    const completion = await this.client.chat.completions.create({
-      model: this.modelId,
-      messages: [
-        { role: 'developer', content: EVALUATION_SYSTEM_PROMPT },
-        { role: 'user', content: userPrompt },
-      ],
-      temperature: this.getTemperature(0.3),
-    });
-
-    const text = completion.choices[0]?.message?.content ?? '';
-    return this.parseEvaluationResponse(text);
+    try {
+      const completion = await this.client.chat.completions.create({
+        model: this.modelId,
+        messages: [
+          { role: 'developer', content: EVALUATION_SYSTEM_PROMPT },
+          { role: 'user', content: userPrompt },
+        ],
+        temperature: this.getTemperature(0.3),
+      });
+      const text = completion.choices[0]?.message?.content ?? '';
+      return this.parseEvaluationResponse(text);
+    } catch (error) {
+      this.logger.error(`Failed to evaluate answer: ${error}`);
+      throw error;
+    }
   }
 
   // AI-NOTE: Генерирует уточняющий текст вопроса на основе истории ответов

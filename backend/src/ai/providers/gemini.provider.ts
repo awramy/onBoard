@@ -19,8 +19,8 @@ import {
 @Injectable()
 export class GeminiProvider extends BaseAiProvider {
   readonly name = 'gemini';
-  /** Достаточно для полного JSON-ответа (score, feedback, recommendations); малый лимит обрезал вывод и ломал парсинг. */
-  private static readonly EVALUATE_MAX_OUTPUT_TOKENS = 640;
+  /** Кириллица расходует ~2 токена/символ, поэтому лимит должен быть достаточно большим для полного JSON-ответа. */
+  private static readonly EVALUATE_MAX_OUTPUT_TOKENS = 1500;
   private static readonly GENERATE_MAX_OUTPUT_TOKENS = 60;
   private client: GoogleGenAI | null = null;
   protected readonly logger = new Logger(GeminiProvider.name);
@@ -68,6 +68,7 @@ export class GeminiProvider extends BaseAiProvider {
         systemInstruction: EVALUATION_SYSTEM_PROMPT,
         temperature: 0.3,
         maxOutputTokens: GeminiProvider.EVALUATE_MAX_OUTPUT_TOKENS,
+        responseMimeType: 'application/json',
       },
     });
 

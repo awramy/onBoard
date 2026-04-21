@@ -26,11 +26,13 @@ export abstract class BaseAiProvider implements AiProvider {
   ): Promise<EvaluationResult>;
   abstract generateQuestionText(ctx: GenerateQuestionContext): Promise<string>;
 
-  // AI-NOTE: Формирует промпт для оценки ответа с учётом истории и isDivide
+  // AI-NOTE: Формирует промпт для оценки ответа с учётом уровня, сложности, истории и isDivide
   protected buildEvaluationPrompt(ctx: EvaluateAnswerContext): string {
     let prompt = `Question: ${this.truncateText(ctx.questionText, BaseAiProvider.MAX_QUESTION_LENGTH)}\n`;
     prompt += `Reference: ${this.truncateText(ctx.questionExplanation, BaseAiProvider.MAX_EXPLANATION_LENGTH)}\n`;
     prompt += `Answer: ${this.truncateText(ctx.answerText, BaseAiProvider.MAX_ANSWER_LENGTH)}\n`;
+    prompt += `Difficulty: ${ctx.difficulty ?? 'middle'}\n`;
+    prompt += `QuestionDifficulty: ${ctx.questionDifficulty ?? 3}\n`;
     prompt += `isDivide: ${ctx.isDivide ? 'yes' : 'no'}\n`;
     prompt += `Mastery: ${ctx.currentMastery}\n`;
 
