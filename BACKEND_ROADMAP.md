@@ -16,6 +16,7 @@
 - `GET /api/users/me/progress` — агрегированный прогресс по технологиям → топикам
 - `GET /api/users/me/progress/topics?technologyLevelId=<uuid>` — прогресс по топикам уровня
 - `GET /api/users/me/progress/questions?topicId=<uuid>` — прогресс по вопросам топика (с пагинацией)
+- `GET /api/users/me/questions/:questionId/history?lang=<locale>` - история ответов пользователя по вопросу
 - `POST /api/sessions`, `GET /api/sessions`, `GET /api/sessions/:id` — CRUD сессий (с пагинацией, i18n)
 - `POST /api/sessions/:id/start` — запуск сессии с генерацией вопросов
 - `GET /api/sessions/:id/current-question` — текущий вопрос сессии
