@@ -4,6 +4,8 @@
 >
 > Источник истины по API: [BACKEND_ROADMAP.md](BACKEND_ROADMAP.md), строки 7-26.
 
+**Статус:** [§6 Фаза 0](#6-фаза-0--снос-и-базовая-настройка) **выполнена** (скелет, зависимости, алиасы, env, тема в `index.css`, orval → `react-query.ts` + `schemas/`, `custom-fetcher`).
+
 ---
 
 ## 1. Цели и текущее состояние
@@ -17,16 +19,21 @@
 - Стандартная структура React + Vite (feature-based группировка, без экзотических архитектур).
 - Локализация (ru/en), доступность (a11y), адаптивная верстка (mobile-first), performance (code-splitting, prefetch).
 
-### Что сейчас есть (`frontend/`)
+### Что сейчас есть (`frontend/`) — после фазы 0
 
-Черновой React 19 + Vite 7 SPA. Стек уже подходит для нового приложения, UI — **сносим полностью**.
+Базовый каркас React 19 + Vite 7; legacy-страницы и самописный API-клиент **удалены**. Дальше — фазы 1+ (shadcn, роутинг, фичи).
 
-- Dependencies: `react@19`, `react-router-dom@6`, `@tanstack/react-query@5`, `zustand@5`, `axios@1`, `react-hook-form@7`, `tailwindcss@4`, `@tailwindcss/vite@4`.
-- 3 страницы (сносим): [frontend/src/pages/LoginPage.tsx](frontend/src/pages/LoginPage.tsx), [frontend/src/pages/RegisterPage.tsx](frontend/src/pages/RegisterPage.tsx), [frontend/src/pages/DashboardPage.tsx](frontend/src/pages/DashboardPage.tsx) — тёмная indigo-тема, Tailwind inline-классы, без дизайн-системы.
-- Роутинг в [frontend/src/App.tsx](frontend/src/App.tsx) — 3 маршрута (`/login`, `/register`, `/`), простые PublicRoute/PrivateRoute.
-- API-клиент [frontend/src/api/client.ts](frontend/src/api/client.ts) — axios + Bearer-токен + 401-redirect. **Переносим в `src/api/http.ts` как отправную точку.**
-- Auth-store [frontend/src/store/auth.ts](frontend/src/store/auth.ts) — zustand без middleware, ручная работа с localStorage. **Переписываем на `zustand/middleware persist` в `src/stores/auth.store.ts`.**
-- Прокси `/api → localhost:3000` в [frontend/vite.config.ts](frontend/vite.config.ts) — оставляем, добавляем алиас `@/*`.
+- Зависимости из [§2](#2-стек-и-ключевые-решения) (в т.ч. shadcn-стек, orval, i18n, zod) **установлены**.
+- Алиас `@/*` в [frontend/vite.config.ts](frontend/vite.config.ts) и [frontend/tsconfig.app.json](frontend/tsconfig.app.json).
+- [frontend/src/config/env.ts](frontend/src/config/env.ts), [.env.example](frontend/.env.example).
+- [frontend/src/App.tsx](frontend/src/App.tsx) — заглушка; [frontend/src/main.tsx](frontend/src/main.tsx); [frontend/src/styles/index.css](frontend/src/styles/index.css) — Tailwind v4 + токены темы (как в [§3](#3-тема-и-дизайн-система), без отдельного shadcn-init).
+- [frontend/src/lib/cn.ts](frontend/src/lib/cn.ts) — `clsx` + `tailwind-merge`.
+- [frontend/src/api/custom-fetcher.ts](frontend/src/api/custom-fetcher.ts) — axios mutator для orval; [frontend/src/api/query-client.ts](frontend/src/api/query-client.ts) — `QueryClient`.
+- Кодоген: [frontend/orval.config.ts](frontend/orval.config.ts) → [frontend/src/api/generated/react-query.ts](frontend/src/api/generated/react-query.ts) + [frontend/src/api/generated/schemas/](frontend/src/api/generated/schemas/); по желанию закоммичен [frontend/src/api/openapi.json](frontend/src/api/openapi.json) как снимок спеки.
+- Скелет папок по [§4](#4-структура-проекта) (без `.gitkeep` — пустые каталоги в git не трекаются, это нормально).
+- **Дальше по плану:** shadcn init ([§7](#7-фаза-1--дизайн-система-и-тема)), `auth.store.ts`, провайдеры, роуты.
+
+_Исторически (до сноса):_ черновой SPA с Login/Register/Dashboard, [frontend/src/api/client.ts](frontend/src/api/client.ts), [frontend/src/store/auth.ts](frontend/src/store/auth.ts) — снято; идеи interceptors перенесены в `custom-fetcher.ts`.
 
 ### Что переиспользуем
 
@@ -65,7 +72,7 @@
 | Линтеры | ESLint 9 flat config | Уже стоит |
 | Dev-tools | `@tanstack/react-query-devtools`, React DevTools | Отладка |
 
-### Новые зависимости (будут поставлены в фазе 0)
+### Новые зависимости (установлены в фазе 0)
 
 ```bash
 # shadcn core deps
@@ -218,17 +225,15 @@ pnpm add -D openapi-typescript
 ```
 frontend/src/
   api/                       # API-слой: axios mutator + сгенерированный orval-код
-    http.ts                  # кастомный axios-инстанс + interceptors (mutator для orval)
+    custom-fetcher.ts        # axios-инстанс + interceptors (mutator `customReactQueryAxios` для orval)
     query-client.ts          # TanStack QueryClient + defaults
+    openapi.json             # опционально: снимок OpenAPI (если коммитим)
     generated/               # ! ГЕНЕРИРУЕТСЯ orval, НЕ РЕДАКТИРУЕТСЯ ВРУЧНУЮ
-      endpoints.ts           # все хуки: useLogin, useGetSessions, usePostSessions, ...
-      schemas/               # TypeScript-типы по схемам Swagger (User, Session, ...)
+      react-query.ts         # единый файл: хуки use* (TanStack Query) + функции API
+      schemas/               # TypeScript-типы/параметры по схемам Swagger
         index.ts
-        user.ts
-        session.ts
-        interviewAnswer.ts
-        ...
-      zod.ts                 # zod-валидаторы запросов/ответов (опционально)
+        …                    # *Params, *Dto, …
+      # zod.ts — отдельный target в orval, только если включите (фаза 3+ форм)
 
   components/
     ui/                      # shadcn-компоненты (Button, Card, Dialog, ...)
@@ -372,70 +377,53 @@ frontend/src/
   main.tsx                   # createRoot + <App />
 
 frontend/
-  orval.config.ts            # конфиг кодогенерации (из Swagger бэка)
+  orval.config.ts            # конфиг orval (живой URL `http://localhost:3000/api/docs-json` или локальный spec)
 ```
 
 ### Соглашения
 
 - **Алиас `@/*` → `src/*`** (настраивается в `vite.config.ts` и `tsconfig.app.json`).
-- Импортируем явно: `import { Button } from '@/components/ui/button'`, `import { useLogin } from '@/api/generated/endpoints'`.
+- Импортируем явно: `import { Button } from '@/components/ui/button'`, `import { useAuthControllerLogin, … } from '@/api/generated/react-query'`.
 - Файлы UI-компонентов — PascalCase (`SessionCard.tsx`); хуки, утилиты, сторы — camelCase (`auth.store.ts`).
 - Один компонент — один файл; сложные композиции разбиваем на `components/` подпапку фичи.
 - Если компонент используется более чем в одной фиче → переезжает в `components/common/`.
-- **API-слой (`src/api/generated/*`) полностью генерируется** — ручные правки запрещены, всё перегенерируется командой `pnpm api:gen`. Единственный hand-written файл в `src/api/` — это `http.ts` (mutator) и `query-client.ts`.
+- **API-слой (`src/api/generated/*`) полностью генерируется** — ручные правки запрещены; перегенерация: `pnpm orval:generate` (или `pnpm api:gen:watch`). Hand-written: `src/api/custom-fetcher.ts`, `query-client.ts`.
+- **ESLint** игнорирует `src/api/generated` (flat config). **Prettier** не должен полностью игнорировать `src/api/generated/`, иначе не отформатируется сгенерированный код; формат при codegen задаёт orval: `output.formatter: 'prettier'` (orval v8).
 - **Бизнес-хуки** (`features/*/hooks/useXxx.ts`) — это **тонкие обёртки** над сгенерированными orval-хуками: добавляют `onSuccess`-колбэки (навигация, invalidation, toast), объединяют несколько вызовов или предоставляют default-аргументы. Сырые orval-хуки можно звать и напрямую из компонентов, если бизнес-логики нет.
 - Типы API (`User`, `Session`, `InterviewAnswer` и т.п.) — только из `@/api/generated/schemas`, вручную DTO не пишем.
 
-### 4.1 Конфигурация orval
+### 4.1 Конфигурация orval (фактическое состояние)
 
-`frontend/orval.config.ts`:
+`frontend/orval.config.ts` — проект `reactQuery`, **один** выходной файл + `schemas/`:
 
 ```ts
 import { defineConfig } from 'orval';
 
 export default defineConfig({
-  onboard: {
+  reactQuery: {
     input: {
-      // backend Swagger JSON (Vite-прокси пробрасывает /api → localhost:3000)
-      target: 'http://localhost:3000/api/docs-json',
+      target: 'http://localhost:3000/api/docs-json', // бэк на :3000; спека должна быть валидна для OAS 3.0
     },
     output: {
-      mode: 'split',                   // endpoints.ts + schemas/
-      target: 'src/api/generated/endpoints.ts',
+      mode: 'single',
+      target: 'src/api/generated/react-query.ts',
       schemas: 'src/api/generated/schemas',
-      client: 'react-query',           // TanStack Query хуки
+      client: 'react-query',
       httpClient: 'axios',
-      clean: true,                     // очищает папку перед генерацией
-      prettier: true,
+      clean: true,
+      formatter: 'prettier', // orval v8: встроенное форматирование (peer `prettier`), не `prettier: true`
       override: {
         mutator: {
-          // кастомный axios-инстанс с interceptors (auth-token, lang)
-          path: 'src/api/http.ts',
-          name: 'customHttp',
+          path: 'src/api/custom-fetcher.ts',
+          name: 'customReactQueryAxios',
         },
         query: {
           useQuery: true,
           useMutation: true,
-          useInfinite: true,
-          // infinite-хуки для эндпоинтов с ?skip=&take= (sessions, users, progress/questions)
-          useInfiniteQueryParam: 'skip',
-          signal: true,                // AbortSignal в каждом запросе
-        },
-        operations: {
-          // имена хуков можно уточнять по operationId из Swagger при необходимости
+          useInfinite: false, // `useInfiniteQueryParam: 'skip'` отключён: orval v8 иначе ломал типы на get-by-id
+          signal: true,
         },
       },
-    },
-    // дополнительный target для zod-валидаторов (опционально — фазы 3+ для форм)
-  },
-  onboardZod: {
-    input: { target: 'http://localhost:3000/api/docs-json' },
-    output: {
-      mode: 'single',
-      client: 'zod',
-      target: 'src/api/generated/zod.ts',
-      clean: true,
-      prettier: true,
     },
   },
 });
@@ -446,13 +434,17 @@ export default defineConfig({
 ```jsonc
 {
   "scripts": {
-    "api:gen": "orval",                       // одноразовая генерация
-    "api:gen:watch": "orval --watch",          // режим наблюдения за Swagger-JSON
-    "dev": "pnpm api:gen && vite",             // генерация перед dev
-    "build": "pnpm api:gen && tsc -b && vite build"
+    "orval:generate": "orval --config orval.config.ts",
+    "api:gen:watch": "orval --watch --config orval.config.ts",
+    "dev": "vite",
+    "build": "tsc -b && vite build"
   }
 }
 ```
+
+Перед `pnpm orval:generate` нужен **запущенный** Nest (или иной источник `input.target`). Примечание: при `clean: true` **не** держите второй orval-target с `clean: true` в той же папке `generated/`, иначе один target сотрёт вывод другого. Отдельный `client: 'zod'` (файл `zod.ts`) — опционально, в фазе 3+ для форм.
+
+**Ограничения orval v8:** валидация OpenAPI выполняется **до** `input.override.transformer`; костыли в DTO (например `examples` вместо `example` в OAS 3.0) правятся в NestJS, не в orval.
 
 **Требования к бэкенду для полноценной генерации**:
 
@@ -460,9 +452,9 @@ export default defineConfig({
 - Каждый эндпоинт должен иметь **`@ApiOperation`** и **`@ApiResponse`** с типизированным DTO (не просто `any`/объект). Это задача бэкенда — она вынесена в чек-лист «Координация фронт/бэк» (раздел 16).
 - `operationId`-ы должны быть стабильны между версиями (NestJS по умолчанию генерирует их как `<controller>_<method>` — достаточно для orval).
 
-**Контроль целостности в CI**:
+**Контроль целостности в CI** (когда настроите pipeline):
 
-- Проверка `pnpm api:gen && git diff --exit-code src/api/generated` — если бэк изменил контракт, а фронт не перегенерировал, CI упадёт.
+- `pnpm orval:generate && git diff --exit-code src/api/generated` — при смене контракта без перегенерации дифф будет ненулевой.
 
 ---
 
@@ -536,55 +528,30 @@ export default defineConfig({
 
 **Цель**: чистый скелет проекта со стандартной структурой, готовый принимать фичи.
 
+**Статус: выполнено** (код в репозитории соответствует; коммит с подходящим сообщением — на усмотрение).
+
 ### Шаги
 
-1. Удалить содержимое `frontend/src/` кроме `main.tsx` и `assets/`.
-2. Сформировать скелет папок (см. раздел 4). В каждой папке для начала — `.gitkeep`.
-3. Установить новые зависимости (см. раздел 2).
-4. Настроить алиасы в [frontend/vite.config.ts](frontend/vite.config.ts) и `tsconfig.app.json`:
-   ```ts
-   // vite.config.ts
-   import path from 'node:path';
-   // ...
-   resolve: { alias: { '@': path.resolve(__dirname, './src') } }
-   ```
-   ```jsonc
-   // tsconfig.app.json
-   "baseUrl": ".",
-   "paths": { "@/*": ["src/*"] }
-   ```
-5. `.env.example` и `src/config/env.ts`:
-   ```ts
-   export const env = {
-     apiBaseUrl: import.meta.env.VITE_API_BASE_URL ?? '/api',
-     defaultLang: import.meta.env.VITE_DEFAULT_LANG ?? 'ru',
-     enableFavoritesApi: import.meta.env.VITE_ENABLE_FAVORITES_API === 'true',
-     enableAvatarUpload: import.meta.env.VITE_ENABLE_AVATAR_UPLOAD === 'true',
-   };
-   ```
-6. Подключить базовые файлы-заглушки:
-   - `src/App.tsx` — заглушка `<div>Hello onBoard</div>`.
-   - `src/main.tsx` — createRoot + `<App />`.
-   - `src/styles/index.css` — `@import "tailwindcss";` (пока без темы).
-7. Smoke-тест: `pnpm dev`, открывается белая страница.
-8. **Настроить orval-кодогенерацию** (см. раздел 4.1):
-   - Установить `pnpm add -D orval`.
-   - Создать `frontend/orval.config.ts` (конфиг из раздела 4.1).
-   - Создать минимальный `src/api/http.ts` с экспортом `customHttp` (mutator, см. фазу 2.3).
-   - Убедиться, что бэкенд запущен и `http://localhost:3000/api/docs-json` отвечает.
-   - Запустить `pnpm api:gen` → проверить, что `src/api/generated/` заполнилась.
-   - Добавить `src/api/generated/` в `.gitignore`? — **Нет**, коммитим сгенерированный код (чтобы фронт собирался без запущенного бэка в CI и чтобы ревью видели изменения контракта).
-   - Добавить `src/api/generated/` в `.prettierignore` и `eslint.ignore`.
-9. Прописать скрипты `api:gen`, `api:gen:watch`, обновить `dev`/`build` (см. раздел 4.1).
-10. Git-commit `chore(frontend): teardown legacy SPA, scaffold new structure with orval`.
+1. [x] Удалить содержимое `frontend/src/` кроме `main.tsx` и `assets/`.
+2. [x] Сформировать скелет папок (см. [§4](#4-структура-проекта)). ~~В каждой папке — `.gitkeep`~~ — от **не** используем: пустые каталоги в git не нужны; по мере фич папки заполнятся файлами.
+3. [x] Установить новые зависимости (см. [§2](#2-стек-и-ключевые-решения)), включая `orval`, `prettier` (для `formatter: 'prettier'`), `openapi-typescript` (dev).
+4. [x] Настроить алиасы в [frontend/vite.config.ts](frontend/vite.config.ts) и [frontend/tsconfig.app.json](frontend/tsconfig.app.json) (`@/*` → `src/*`).
+5. [x] [frontend/.env.example](frontend/.env.example) и [frontend/src/config/env.ts](frontend/src/config/env.ts) с полями `apiBaseUrl`, `defaultLang`, `enableFavoritesApi`, `enableAvatarUpload`.
+6. [x] Базовые файлы: [frontend/src/App.tsx](frontend/src/App.tsx) (заглушка), [frontend/src/main.tsx](frontend/src/main.tsx), [frontend/src/styles/index.css](frontend/src/styles/index.css) — не только `tailwindcss`, а **тема** по сниппету [§3](#3-тема-и-дизайн-система) (ближе к будущему shadcn).
+7. [x] [frontend/src/lib/cn.ts](frontend/src/lib/cn.ts) для проверки алиаса `@/lib/cn`.
+8. [x] Smoke: `pnpm dev` — белая страница с «Hello onBoard».
+9. [x] orval: [frontend/orval.config.ts](frontend/orval.config.ts), [frontend/src/api/custom-fetcher.ts](frontend/src/api/custom-fetcher.ts) (mutator `customReactQueryAxios`, не `http.ts` / `customHttp`), [frontend/src/api/query-client.ts](frontend/src/api/query-client.ts); бэк на `http://localhost:3000` для `docs-json`. Генерация: `pnpm orval:generate` → [frontend/src/api/generated/react-query.ts](frontend/src/api/generated/react-query.ts) + [schemas/](frontend/src/api/generated/schemas/).
+10. [x] Сгенерированный код **в git** (не в `.gitignore`); `src/api/generated` **в** [eslint `globalIgnores`](frontend/eslint.config.js); для Prettier **не** игнорировать целиком `src/api/generated` (см. [`.prettierignore`](frontend/.prettierignore) — оставлены комментарии, без массового `src/api/generated/`), иначе `output.formatter: 'prettier'` / ручной prettier не трогает codegen.
+11. [x] Скрипты: `orval:generate`, `api:gen:watch` ([package.json](frontend/package.json)). `dev` / `build` **без** обязательной генерации на каждый старт (ускоряет dev; CI может вызывать `orval:generate` отдельно).
+12. [ ] Git-commit `chore(frontend): teardown legacy SPA, scaffold new structure with orval` — при необходимости выполнить локально.
 
 ### Критерий готовности
 
-- `pnpm build` и `pnpm lint` проходят без ошибок.
-- Структура папок создана по схеме из раздела 4.
-- `import '@/lib/cn'` работает (резолвится через алиас).
-- `pnpm api:gen` успешно генерирует `src/api/generated/endpoints.ts` + `schemas/` + `zod.ts`.
-- `import { useAuthControllerLogin } from '@/api/generated/endpoints'` резолвится в TS.
+- [x] `pnpm build` и `pnpm lint` проходят без ошибок.
+- [x] Структура папок по схеме [§4](#4-структура-проекта) (скелет; сами **файлы** вроде `EmptyState.tsx` — в следующих фазах).
+- [x] `import '@/lib/cn'` резолвится.
+- [x] `pnpm orval:generate` (при поднятом бэке) обновляет `src/api/generated/react-query.ts` и `schemas/`.
+- [x] `import { … } from '@/api/generated/react-query'` (актуальные имена хуков смотреть в файле) резолвится в TS.
 
 ---
 
@@ -594,7 +561,7 @@ export default defineConfig({
 
 ### Шаги
 
-1. Создать `frontend/src/styles/index.css` со snippet'ом из раздела 3.
+1. Сверить `frontend/src/styles/index.css` с разделом 3 (после фазы 0 файл уже с Tailwind + токенами; при `shadcn init` пути и импорты могут обновиться).
 2. Инициализировать shadcn:
    ```bash
    pnpm dlx shadcn@latest init
@@ -685,7 +652,9 @@ export const queryClient = new QueryClient({
 
 ### 8.3 HTTP — axios mutator для orval
 
-`src/api/http.ts` — **единственный** hand-written файл в `api/`, который использует orval (через `override.mutator` в `orval.config.ts`). Экспортирует функцию `customHttp`, которую orval подставит во все сгенерированные запросы вместо дефолтного `axios(...)`:
+Сейчас (после фазы 0): [src/api/custom-fetcher.ts](frontend/src/api/custom-fetcher.ts) — mutator `customReactQueryAxios` в `orval.config.ts` (Bearer, `Accept-Language`, 401). Ниже — **целевой** вариант на `src/api/http.ts` + `customHttp` с Zustand/i18n (когда появятся [§8](#8-фаза-2--базовый-каркас-приложения) и [§9](#9-фаза-3--авторизация-и-guards)) — смысл тот же, или расширить `custom-fetcher.ts` на месте.
+
+`http.ts` (план): hand-written mutator, экспорт `customHttp` для orval:
 
 ```ts
 import axios, { AxiosError, type AxiosRequestConfig } from 'axios';
@@ -871,7 +840,7 @@ export const useAuthStore = create<AuthState>()(
 // src/features/auth/hooks/useLogin.ts
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { useAuthControllerLogin } from '@/api/generated/endpoints';
+import { useAuthControllerLogin } from '@/api/generated/react-query';
 import { useAuthStore } from '@/stores/auth.store';
 import { queryClient } from '@/api/query-client';
 import { getApiErrorMessage } from '@/lib/api-error';
@@ -903,11 +872,11 @@ const { mutate, isPending } = useLogin();
 const onSubmit = (values: LoginInput) => mutate({ data: values });
 ```
 
-> `{ data: values }` — стандартный wrapper orval для body-мутаций. Типы `LoginDto`/`RegisterDto` импортируются из `@/api/generated/schemas`, zod-схемы для валидации — из `@/api/generated/zod`.
+> `{ data: values }` — стандартный wrapper orval для body-мутаций. Типы `LoginDto`/`RegisterDto` — из `@/api/generated/schemas`. Zod из `@/api/generated/zod` — **после** добавления отдельного orval-target `client: 'zod'` (см. [§4.1](#41-конфигурация-orval-фактическое-состояние)); до этого — свои zod-схемы в `features/auth/schemas.ts` или вручную.
 
 ### 9.3 Формы
 
-Для форм используем zod-схемы **из сгенерированного `@/api/generated/zod`** (orval создаёт их из Swagger):
+Если в orval добавлен zod-target — используем схемы **из `@/api/generated/zod`**. Пока target нет, колонка ниже — план/пример:
 
 ```ts
 // src/features/auth/schemas.ts
@@ -1108,7 +1077,7 @@ import {
   useSessionsControllerAnswer,
   getSessionsControllerFindOneQueryKey,
   getSessionsControllerGetCurrentQuestionQueryKey,
-} from '@/api/generated/endpoints';
+} from '@/api/generated/react-query';
 
 export const useAnswerQuestion = (sessionId: string) => {
   const qc = useQueryClient();
@@ -1127,7 +1096,7 @@ export const useAnswerQuestion = (sessionId: string) => {
 // src/features/session-chat/hooks/useChatRuntime.ts
 import {
   useSessionsControllerGetCurrentQuestion,
-} from '@/api/generated/endpoints';
+} from '@/api/generated/react-query';
 import { useAnswerQuestion } from './useAnswerQuestion';
 
 export function useChatRuntime(sessionId: string) {
@@ -1295,7 +1264,7 @@ export function useChatRuntime(sessionId: string) {
 - `features/profile/components/ChangeAvatarDialog.tsx` — drag-drop upload, кроп (`react-easy-crop`), `useUsersControllerUploadAvatar()` (backend-ext, multipart/form-data).
 - `features/profile/components/ChangePasswordDialog.tsx` — форма с current/new/confirm, `useUsersControllerChangePassword()` (backend-ext).
 
-Все три скрыты за `env.enableAvatarUpload` / `env.enableProfileEdit` флагами, пока бэк не готов. Как только бэк добавит эндпоинты и `@ApiResponse`-декораторы — `pnpm api:gen` создаст соответствующие хуки, вручную ничего добавлять не нужно.
+Все три скрыты за `env.enableAvatarUpload` / `env.enableProfileEdit` флагами, пока бэк не готов. Как только бэк добавит эндпоинты и `@ApiResponse`-декораторы — `pnpm orval:generate` создаст соответствующие хуки, вручную ничего добавлять не нужно.
 
 ### 14.3 MVP без backend-ext
 
@@ -1417,13 +1386,13 @@ model Favorite {
 
 ### Координация фронт/бэк
 
-- **Никаких заранее захардкоженных TypeScript-типов на фронте** — как только бэк добавил endpoint с `@ApiOperation`/`@ApiResponse` и прошёл миграцию, фронт делает `pnpm api:gen`, и в `src/api/generated/` автоматически появляются нужные хуки и схемы.
+- **Никаких заранее захардкоженных TypeScript-типов на фронте** — как только бэк добавил endpoint с `@ApiOperation`/`@ApiResponse` и прошёл миграцию, фронт делает `pnpm orval:generate`, и в `src/api/generated/` автоматически появляются нужные хуки и схемы.
 - Код, который ими пользуется, скрыт за env-флагами (`enableFavoritesApi`, `enableAvatarUpload`, ...).
 - Сценарий поставки фичи:
   1. Бэк мержит миграцию + контроллер c swagger-декораторами.
-  2. Фронт: `pnpm api:gen` → ревью diff в `src/api/generated/` → подключение wrapper'а и UI.
+  2. Фронт: `pnpm orval:generate` → ревью diff в `src/api/generated/` → подключение wrapper'а и UI.
   3. Включить флаг в `.env.production`.
-- CI фронта запускает `pnpm api:gen && git diff --exit-code src/api/generated` — защита от забытой перегенерации.
+- CI фронта запускает `pnpm orval:generate && git diff --exit-code src/api/generated` — защита от забытой перегенерации.
 
 ---
 
@@ -1493,7 +1462,7 @@ model Favorite {
 - [ ] Адаптив mobile/desktop.
 - [ ] Линтер и TypeScript — 0 ошибок.
 - [ ] `pnpm build` проходит.
-- [ ] `pnpm api:gen && git diff --exit-code src/api/generated` проходит (фронт собран с актуальным контрактом).
+- [ ] `pnpm orval:generate && git diff --exit-code src/api/generated` проходит (фронт собран с актуальным контрактом).
 - [ ] Никаких самописных api-модулей и DTO вне `src/api/generated/*`.
 
 ### Beta (end of фазы 10)
@@ -1523,14 +1492,14 @@ model Favorite {
 ```mermaid
 flowchart TD
   Swagger[("Backend Swagger<br/>/api/docs-json")]
-  Orval["orval codegen<br/>(pnpm api:gen)"]
+  Orval["orval codegen<br/>(pnpm orval:generate)"]
 
   App["App.tsx (providers + router)"]
   Pages["pages/*"]
   Features["features/*<br/>(wrappers + UI)"]
   Components["components/ui + components/common + components/layout"]
-  ApiGen["api/generated/*<br/>(hooks + types + zod)"]
-  ApiHttp["api/http.ts<br/>(axios mutator)"]
+  ApiGen["api/generated/*<br/>(react-query + schemas)"]
+  ApiHttp["api/custom-fetcher.ts<br/>(axios mutator)"]
   QueryClient["api/query-client.ts"]
   Stores["stores/*"]
   Hooks["hooks/*"]

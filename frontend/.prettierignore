@@ -1,0 +1,3 @@
+# Не игнорировать сгенерированный API: иначе `pnpm prettier --write` (в т.ч. хуки)
+# и format-on-save не применяются к react-query.ts / schemas.
+# Форматирование при codegen даёт orval: `output.formatter: 'prettier'`.

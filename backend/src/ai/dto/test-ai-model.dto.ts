@@ -6,7 +6,7 @@ export class TestAiModelDto {
   @ApiPropertyOptional({
     description:
       'Specific model name or alias to test. If omitted, all available configured models are tested.',
-    examples: ['auto', 'gemini', 'gemini-2.5-pro', 'openai', 'gpt-4.1-mini'],
+    example: 'auto',
   })
   @IsOptional()
   @IsString()
