@@ -1,26 +1,31 @@
-import axios, { type AxiosRequestConfig } from 'axios';
+import axios, { AxiosError, type AxiosRequestConfig } from 'axios';
+
 import { env } from '@/config/env';
+import { i18n } from '@/i18n';
+import { useAuthStore } from '@/stores/auth.store';
 
 export const httpInstance = axios.create({
   baseURL: env.apiBaseUrl,
 });
 
 httpInstance.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  const token = useAuthStore.getState().token;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
-  const lang = localStorage.getItem('i18nextLng') ?? env.defaultLang;
+  const lang = i18n.resolvedLanguage ?? env.defaultLang;
   config.headers['Accept-Language'] = lang;
   return config;
 });
 
 httpInstance.interceptors.response.use(
   (response) => response,
-  (error) => {
+  (error: AxiosError) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+      useAuthStore.getState().logout();
+      if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   },
@@ -40,3 +45,6 @@ export const customReactQueryAxios = <T>(config: AxiosRequestConfig): Promise<T>
 
   return promise;
 };
+
+export type ErrorType<Error> = AxiosError<Error>;
+export type BodyType<BodyData> = BodyData;

@@ -1,0 +1,47 @@
+{
+  "app": {
+    "name": "onBoard",
+    "tagline": "Интерактивные собеседования с ИИ"
+  },
+  "nav": {
+    "dashboard": "Главная",
+    "sessions": "Сессии",
+    "progress": "Прогресс",
+    "leaderboard": "Лидерборд",
+    "profile": "Профиль",
+    "uiKit": "UI Kit"
+  },
+  "auth": {
+    "login": "Войти",
+    "register": "Регистрация",
+    "logout": "Выйти",
+    "loginAsDev": "Войти как dev",
+    "loginTitle": "Вход в onBoard",
+    "loginDescription": "Авторизация будет включена в Фазе 3. Пока — заглушка для разработки.",
+    "registerTitle": "Создать аккаунт",
+    "registerDescription": "Регистрация появится в Фазе 3.",
+    "haveAccount": "Уже есть аккаунт?",
+    "noAccount": "Ещё нет аккаунта?"
+  },
+  "user": {
+    "anonymous": "Гость"
+  },
+  "language": {
+    "title": "Язык",
+    "ru": "Русский",
+    "en": "English"
+  },
+  "errors": {
+    "boundaryTitle": "Что-то пошло не так",
+    "boundaryDescription": "Произошла непредвиденная ошибка. Попробуйте обновить страницу.",
+    "reload": "Перезагрузить",
+    "notFoundTitle": "Страница не найдена",
+    "notFoundDescription": "Адрес неверный или раздел ещё не реализован.",
+    "goHome": "На главную"
+  },
+  "common": {
+    "comingSoon": "Скоро",
+    "wipDescription": "Раздел будет реализован в одной из следующих фаз.",
+    "open": "Открыть"
+  }
+}

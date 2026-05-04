@@ -1,0 +1,47 @@
+{
+  "app": {
+    "name": "onBoard",
+    "tagline": "Interactive AI interviews"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "sessions": "Sessions",
+    "progress": "Progress",
+    "leaderboard": "Leaderboard",
+    "profile": "Profile",
+    "uiKit": "UI Kit"
+  },
+  "auth": {
+    "login": "Sign in",
+    "register": "Sign up",
+    "logout": "Sign out",
+    "loginAsDev": "Sign in as dev",
+    "loginTitle": "Sign in to onBoard",
+    "loginDescription": "Real auth lands in Phase 3. This is a dev stub.",
+    "registerTitle": "Create account",
+    "registerDescription": "Registration will be added in Phase 3.",
+    "haveAccount": "Already have an account?",
+    "noAccount": "Don't have an account?"
+  },
+  "user": {
+    "anonymous": "Guest"
+  },
+  "language": {
+    "title": "Language",
+    "ru": "Русский",
+    "en": "English"
+  },
+  "errors": {
+    "boundaryTitle": "Something went wrong",
+    "boundaryDescription": "An unexpected error occurred. Please try reloading.",
+    "reload": "Reload",
+    "notFoundTitle": "Page not found",
+    "notFoundDescription": "The URL is wrong or the page is not yet implemented.",
+    "goHome": "Go home"
+  },
+  "common": {
+    "comingSoon": "Coming soon",
+    "wipDescription": "This section will land in one of the upcoming phases.",
+    "open": "Open"
+  }
+}

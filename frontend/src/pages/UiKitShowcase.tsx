@@ -397,3 +397,5 @@ export function UiKitShowcase() {
     </TooltipProvider>
   );
 }
+
+export default UiKitShowcase;
