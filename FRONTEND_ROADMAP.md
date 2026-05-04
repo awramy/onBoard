@@ -557,21 +557,12 @@ export default defineConfig({
 
 ## 7. Фаза 1 — Дизайн-система и тема
 
-**Цель**: готовый набор shadcn-компонентов, тема применена.
+**Цель**: готовый набор shadcn-компонентов, c актуализацией темы под видение дизайна. Дизайн - компонентная база на основе shadcn, базовые компоненты с эффектом матового стекла, с легким ацкентным фоном (салатовый) или рамками.
 
 ### Шаги
 
 1. Сверить `frontend/src/styles/index.css` с разделом 3 (после фазы 0 файл уже с Tailwind + токенами; при `shadcn init` пути и импорты могут обновиться).
-2. Инициализировать shadcn:
-   ```bash
-   pnpm dlx shadcn@latest init
-   # style: new-york
-   # base color: neutral (потом переопределим)
-   # css variables: yes
-   # cssPath: src/styles/index.css
-   # components path: src/components/ui
-   # utils path: src/lib/cn
-   ```
+2. Инициализировать shadcn
 3. Проверить, что `components.json` выставил корректные пути (`@/components/ui`, `@/lib/cn`).
 4. Сгенерировать компоненты (будут лежать в `src/components/ui/`):
    ```bash
@@ -580,7 +571,7 @@ export default defineConfig({
      command separator scroll-area tooltip select sonner alert \
      accordion
    ```
-5. Переопределить токены салатового в `index.css` (см. раздел 3). Проверить, что `<Button>` окрашивается салатовым.
+5. Серьезный раздел - необходимо кастомизирвоать каждый компонент, используя общий, понятный подход. Добавить эффект матового стекла, далее синтегрировать стекло с акцентным цветом. Переопределить токены салатового в `index.css` (см. раздел 3). Доп. пожелания - карточки без рамок (играем фоном).
 6. Создать кастомные композиции:
    - `src/components/common/EmptyState.tsx`
    - `src/components/common/PageHeader.tsx`

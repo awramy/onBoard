@@ -71,7 +71,7 @@
   --radius: 0.75rem;
 
   /* Page chrome */
-  --background: oklch(0.985 0.005 145);
+  --background: oklch(0.985 0.004 152);
   --foreground: oklch(0.18 0.01 240);
 
   /* Surfaces */
@@ -85,39 +85,39 @@
   /* Lines (used by ring-offset and a few non-card components) */
   --border: oklch(0.93 0.005 240);
   --input: oklch(0.93 0.005 240);
-  --ring: oklch(0.72 0.17 145);
+  --ring: oklch(0.72 0.12 152);
 
-  /* Brand */
-  --primary: oklch(0.72 0.17 145);
-  --primary-foreground: oklch(0.16 0.02 145);
+  /* Brand — soft sage/mint (hue 152°, low chroma) */
+  --primary: oklch(0.80 0.09 152);
+  --primary-foreground: oklch(0.20 0.04 152);
   --secondary: oklch(0.97 0.005 240);
   --secondary-foreground: oklch(0.18 0.01 240);
-  --accent: oklch(0.94 0.06 145);
-  --accent-foreground: oklch(0.25 0.06 145);
+  --accent: oklch(0.95 0.05 152);
+  --accent-foreground: oklch(0.30 0.06 152);
 
   /* Status */
   --destructive: oklch(0.62 0.22 25);
-  --success: oklch(0.72 0.17 145);
-  --success-foreground: oklch(0.16 0.02 145);
+  --success: oklch(0.70 0.11 152);
+  --success-foreground: oklch(0.18 0.04 152);
   --warning: oklch(0.82 0.15 85);
   --warning-foreground: oklch(0.22 0.05 85);
 
   /* Charts (kept neutral for now; revisit when charts land) */
-  --chart-1: oklch(0.72 0.17 145);
-  --chart-2: oklch(0.65 0.12 200);
-  --chart-3: oklch(0.7 0.15 85);
-  --chart-4: oklch(0.6 0.2 25);
-  --chart-5: oklch(0.55 0.13 295);
+  --chart-1: oklch(0.72 0.10 152);
+  --chart-2: oklch(0.65 0.10 200);
+  --chart-3: oklch(0.70 0.12 85);
+  --chart-4: oklch(0.60 0.18 25);
+  --chart-5: oklch(0.55 0.11 295);
 
   /* Sidebar slot — neutral light surface, accent ring matches brand */
-  --sidebar: oklch(0.985 0.005 145);
+  --sidebar: oklch(0.985 0.004 152);
   --sidebar-foreground: oklch(0.18 0.01 240);
-  --sidebar-primary: oklch(0.72 0.17 145);
-  --sidebar-primary-foreground: oklch(0.16 0.02 145);
-  --sidebar-accent: oklch(0.94 0.06 145);
-  --sidebar-accent-foreground: oklch(0.25 0.06 145);
+  --sidebar-primary: oklch(0.80 0.09 152);
+  --sidebar-primary-foreground: oklch(0.20 0.04 152);
+  --sidebar-accent: oklch(0.95 0.05 152);
+  --sidebar-accent-foreground: oklch(0.30 0.06 152);
   --sidebar-border: oklch(0.93 0.005 240);
-  --sidebar-ring: oklch(0.72 0.17 145);
+  --sidebar-ring: oklch(0.72 0.12 152);
 }
 
 @layer base {
@@ -135,12 +135,12 @@
     background:
       radial-gradient(
         1200px 600px at 0% -10%,
-        oklch(0.94 0.08 145 / 0.6),
+        oklch(0.95 0.05 152 / 0.55),
         transparent 60%
       ),
       radial-gradient(
         900px 500px at 100% 110%,
-        oklch(0.94 0.06 200 / 0.45),
+        oklch(0.95 0.04 200 / 0.40),
         transparent 60%
       ),
       var(--background);
