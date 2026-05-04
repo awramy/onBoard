@@ -491,24 +491,16 @@ export default defineConfig({
 
 ---
 
-## 8. Фаза 2 — Базовый каркас приложения
+## 8. Фаза 2 — Базовый каркас приложения - DONE
 
 **Цель**: работающий роутинг с layout'ами, providers, i18n, error boundary.
 
-### 8.1 Providers
+### 8.1 Providers ✅
 
-`src/providers/AppProviders.tsx`:
+`src/providers/AppProviders.tsx` — порядок обёрток: `QueryClientProvider` → `I18nextProvider` → `ErrorBoundary` → `children` + `Toaster` + `ReactQueryDevtools` (только в `import.meta.env.DEV`).
 
 ```tsx
-import { QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { I18nextProvider } from 'react-i18next';
-import { Toaster } from '@/components/ui/sonner';
-import { ErrorBoundary } from '@/components/common/ErrorBoundary';
-import { queryClient } from '@/api/query-client';
-import { i18n } from '@/i18n';
-
-export function AppProviders({ children }: { children: React.ReactNode }) {
+export function AppProviders({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <I18nextProvider i18n={i18n}>
@@ -523,169 +515,70 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
 }
 ```
 
-### 8.2 QueryClient
+`src/main.tsx` — `import '@/i18n'` добавлен сразу после импорта стилей (до `App`), чтобы i18next инициализировался до первого `useTranslation()`.
 
-```ts
-// src/api/query-client.ts
-import { QueryClient } from '@tanstack/react-query';
-
-export const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 30_000,
-      gcTime: 5 * 60_000,
-      retry: (count, err) => (isAuthError(err) ? false : count < 2),
-      refetchOnWindowFocus: false,
-    },
-    mutations: { retry: false },
-  },
-});
-```
-
-### 8.3 HTTP — axios mutator для orval
-
-Сейчас (после фазы 0): [src/api/custom-fetcher.ts](frontend/src/api/custom-fetcher.ts) — mutator `customReactQueryAxios` в `orval.config.ts` (Bearer, `Accept-Language`, 401). Ниже — **целевой** вариант на `src/api/http.ts` + `customHttp` с Zustand/i18n (когда появятся [§8](#8-фаза-2--базовый-каркас-приложения) и [§9](#9-фаза-3--авторизация-и-guards)) — смысл тот же, или расширить `custom-fetcher.ts` на месте.
-
-`http.ts` (план): hand-written mutator, экспорт `customHttp` для orval:
-
-```ts
-import axios, { AxiosError, type AxiosRequestConfig } from 'axios';
-import { env } from '@/config/env';
-import { i18n } from '@/i18n';
-import { useAuthStore } from '@/stores/auth.store';
-
-const axiosInstance = axios.create({ baseURL: env.apiBaseUrl });
-
-axiosInstance.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().token;
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  const lang = i18n.resolvedLanguage;
-  if (config.method === 'get' && lang) {
-    config.params = { lang, ...(config.params ?? {}) };
-  }
-  return config;
-});
-
-axiosInstance.interceptors.response.use(
-  (r) => r,
-  (err: AxiosError) => {
-    if (err.response?.status === 401) {
-      useAuthStore.getState().logout();
-    }
-    return Promise.reject(err);
-  },
-);
-
-// Сигнатура, которую ожидает orval (react-query + axios mutator).
-// Подробнее: https://orval.dev/reference/configuration/output#mutator
-export const customHttp = <T>(
-  config: AxiosRequestConfig,
-  options?: AxiosRequestConfig,
-): Promise<T> => {
-  const source = axios.CancelToken.source();
-  const promise = axiosInstance({
-    ...config,
-    ...options,
-    cancelToken: source.token,
-  }).then((r) => r.data);
-
-  // @ts-expect-error — orval добавляет .cancel к промису для useQuery
-  promise.cancel = () => source.cancel('Query was cancelled');
-  return promise;
-};
-
-// Реэкспорт типа ошибки — orval'овские хуки типизируют её как ErrorType
-export type ErrorType<Error> = AxiosError<Error>;
-export type BodyType<BodyData> = BodyData;
-```
-
-Обновить `orval.config.ts`, чтобы указать типы ошибок:
-
-```ts
-override: {
-  mutator: { path: 'src/api/http.ts', name: 'customHttp' },
-  // позволяет использовать AxiosError<ApiError> в mutation-колбэках
-  // 'src/types/common.ts' экспортирует type ApiError = { message: string; statusCode: number }
+`src/App.tsx`:
+```tsx
+export default function App() {
+  return (
+    <AppProviders>
+      <RouterProvider router={router} />
+    </AppProviders>
+  );
 }
 ```
 
-### 8.4 Router (data router)
+### 8.2 QueryClient ✅
 
-```ts
-// src/routes/router.tsx
-import { createBrowserRouter, Navigate } from 'react-router-dom';
-import { AuthLayout } from '@/components/layout/AuthLayout';
-import { AppLayout } from '@/components/layout/AppLayout';
-import { ProtectedRoute } from '@/components/layout/ProtectedRoute';
-import { PublicRoute } from '@/components/layout/PublicRoute';
+`src/api/query-client.ts` — `staleTime: 30s`, `gcTime: 5min`, `retry` пропускает 401, `refetchOnWindowFocus: false`.
 
-export const router = createBrowserRouter([
-  {
-    element: <PublicRoute><AuthLayout /></PublicRoute>,
-    children: [
-      { path: '/login', lazy: async () => ({ Component: (await import('@/pages/LoginPage')).default }) },
-      { path: '/register', lazy: async () => ({ Component: (await import('@/pages/RegisterPage')).default }) },
-    ],
-  },
-  {
-    element: <ProtectedRoute><AppLayout /></ProtectedRoute>,
-    children: [
-      { path: '/', lazy: async () => ({ Component: (await import('@/pages/DashboardPage')).default }) },
-      { path: '/sessions', lazy: async () => ({ Component: (await import('@/pages/SessionsPage')).default }) },
-      { path: '/sessions/:id/chat', lazy: async () => ({ Component: (await import('@/pages/SessionChatPage')).default }) },
-      { path: '/sessions/:id/history', lazy: async () => ({ Component: (await import('@/pages/SessionHistoryPage')).default }) },
-      { path: '/progress', lazy: async () => ({ Component: (await import('@/pages/ProgressPage')).default }) },
-      { path: '/progress/:techLevelId', lazy: async () => ({ Component: (await import('@/pages/ProgressTopicsPage')).default }) },
-      { path: '/progress/topics/:topicId', lazy: async () => ({ Component: (await import('@/pages/ProgressQuestionsPage')).default }) },
-      { path: '/progress/questions/:questionId', lazy: async () => ({ Component: (await import('@/pages/QuestionHistoryPage')).default }) },
-      { path: '/progress/leaderboard', lazy: async () => ({ Component: (await import('@/pages/LeaderboardPage')).default }) },
-      { path: '/profile', lazy: async () => ({ Component: (await import('@/pages/ProfilePage')).default }) },
-    ],
-  },
-  { path: '*', element: <Navigate to="/" replace /> },
-]);
-```
+### 8.3 HTTP — axios mutator для orval ✅
 
-### 8.5 Layouts и guards
+`src/api/custom-fetcher.ts` — реализован и используется в `orval.config.ts` как mutator `customReactQueryAxios`. Перехватчики: Bearer-токен из `useAuthStore`, заголовок `Accept-Language` из `i18n.resolvedLanguage`, редирект на `/login` при 401.
 
-- `AuthLayout` — центрированная карточка на фоне `muted`. Логотип сверху.
-- `AppLayout` — `Sidebar` (фиксированный, 240px, сворачивается в Sheet на mobile) + `Topbar` (breadcrumbs + user menu + language switcher). Навигация: Dashboard / Sessions / Progress / Profile. Активный пункт — салатовая полоса слева.
-- `ProtectedRoute` — проверяет `useAuthStore(s => s.isAuthenticated())`, при `false` → `<Navigate to="/login" state={{ from: location }}/>`.
-- `PublicRoute` — если уже авторизован, редиректит на `/`.
+Переименование в `http.ts` / `customHttp` — отложено до Фазы 3 при необходимости.
 
-### 8.6 i18n
+### 8.4 Router (data router) ✅
 
-`src/i18n/index.ts`:
+`src/routes/router.tsx` — `createBrowserRouter` с 13 страницами (lazy) + `/404` + wildcard `*→/404`. UI Kit доступен по `/ui-kit` под флагом `import.meta.env.DEV || env.showUiKit`.
 
-```ts
-import i18n from 'i18next';
-import { initReactI18next } from 'react-i18next';
-import LanguageDetector from 'i18next-browser-languagedetector';
-import ru from './locales/ru.json';
-import en from './locales/en.json';
+`src/routes/routes.ts` — объект `ROUTES` с функциями для параметризованных путей.
 
-i18n
-  .use(LanguageDetector)
-  .use(initReactI18next)
-  .init({
-    fallbackLng: 'ru',
-    supportedLngs: ['ru', 'en'],
-    resources: { ru: { translation: ru }, en: { translation: en } },
-    detection: { order: ['localStorage', 'navigator'], caches: ['localStorage'] },
-  });
+### 8.5 Layouts и guards ✅
 
-export { i18n };
-```
+- `AuthLayout` — лого + `LanguageSwitcher` в хедере, `<Outlet>` центрирован в `max-w-sm`.
+- `AppLayout` — `Sidebar` (фикс. 240px, Sheet на `<lg`) + `Topbar` + `<main>`.
+- `Topbar` — sticky glass-хедер `h-14`. Слева заголовок раздела через `getRouteTitleKey(pathname)` (`startsWith`-матчинг: `/progress/leaderboard` → `nav.leaderboard`, `/progress` → `nav.progress`, `/sessions` → `nav.sessions`, `/profile` → `nav.profile`, иначе `nav.dashboard`). Справа `LanguageSwitcher` + `UserMenu`.
+- `ProtectedRoute` — `isAuthenticated()` из `useAuthStore`, при `false` → `<Navigate to="/login">`.
+- `PublicRoute` — при `isAuthenticated()` → `<Navigate to="/">`.
 
-### 8.7 Error boundary
+**Замечание:** `DropdownMenuLabel` (`MenuPrimitive.GroupLabel` из Base UI) требует обёртки `DropdownMenuGroup` — исправлено в `LanguageSwitcher` и `UserMenu`.
 
-`src/components/common/ErrorBoundary.tsx` ловит все React-ошибки → показывает `EmptyState` с кнопкой "Reload". Логи идут в `console.error` + `sonner.toast.error`.
+### 8.6 i18n ✅
 
-### Критерий готовности
+`src/i18n/index.ts` — `LanguageDetector` + `initReactI18next`, `fallbackLng` из `env.defaultLang`, детект из `localStorage` (`i18nextLng`). Локали `ru.json` / `en.json` содержат ключи: `app`, `nav`, `auth`, `user`, `language`, `errors`, `common`.
 
-- 10 маршрутов зарегистрированы, lazy-loading работает.
-- Переключение ru/en в топбаре меняет UI и `?lang=` в API.
+### 8.7 Error boundary ✅
+
+`src/components/common/ErrorBoundary.tsx` — class-component, обёрнут `withTranslation()`. Показывает `EmptyState` с кнопкой «Перезагрузить». Логи: `console.error` + `sonner.toast.error`.
+
+### 8.8 Страницы-заглушки ✅
+
+`src/components/common/WipPage.tsx` — общий helper с `EmptyState` + иконкой `Construction`. Принимает `titleKey` / `descriptionKey` (дефолты: `common.comingSoon` / `common.wipDescription`).
+
+Реализованные страницы:
+- `LoginPage` — `Card` с кнопкой «Войти как dev» (вызывает `useAuthStore.setAuth` со стабом + `navigate('/')`), ссылка на `/register`.
+- `RegisterPage` — `Card` со ссылкой обратно на `/login`.
+- `NotFoundPage` — `EmptyState` с иконкой `Compass` + кнопка «На главную».
+- `DashboardPage`, `SessionsPage`, `SessionChatPage`, `SessionHistoryPage`, `ProgressPage`, `ProgressTopicsPage`, `ProgressQuestionsPage`, `QuestionHistoryPage`, `LeaderboardPage`, `ProfilePage` — `WipPage` с соответствующим `titleKey`.
+
+### Критерий готовности ✅
+
+- 13 маршрутов зарегистрированы, lazy-loading работает (Vite выдаёт отдельные чанки для каждой страницы).
+- `pnpm lint` и `pnpm build` — зелёные без ошибок TS.
+- Переключение ru/en в `Topbar` меняет UI без перезагрузки, `localStorage.i18nextLng` обновляется.
 - Sidebar адаптивный (mobile → Sheet).
+- `/ui-kit` доступен под dev-флагом.
 
 ---
 
