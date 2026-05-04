@@ -105,105 +105,6 @@ pnpm add -D openapi-typescript
 
 ## 3. Тема и дизайн-система
 
-### Палитра
-
-Светлая тема — единственная в MVP. Опциональный dark-mode — в фазе 11.
-
-| Токен | OKLCH | Назначение |
-|-------|-------|------------|
-| `--background` | `oklch(1 0 0)` (белый) | Фон страниц |
-| `--foreground` | `oklch(0.18 0.01 240)` (почти чёрный) | Основной текст |
-| `--card` | `oklch(1 0 0)` | Фон карточек |
-| `--card-foreground` | `oklch(0.18 0.01 240)` | Текст на карточках |
-| `--muted` | `oklch(0.97 0.005 240)` (светло-серый) | Фон второстепенных блоков |
-| `--muted-foreground` | `oklch(0.5 0.01 240)` | Второстепенный текст |
-| `--border` | `oklch(0.93 0.005 240)` | Границы |
-| `--input` | `oklch(0.93 0.005 240)` | Границы инпутов |
-| `--ring` | `oklch(0.78 0.17 145)` | Focus-ring (салатовый) |
-| `--primary` | `oklch(0.78 0.17 145)` | **Акцент (приятный салатовый)** |
-| `--primary-foreground` | `oklch(0.18 0.01 240)` | Тёмный текст на салатовом |
-| `--secondary` | `oklch(0.97 0.005 240)` | Вторичные кнопки |
-| `--secondary-foreground` | `oklch(0.18 0.01 240)` | Текст secondary |
-| `--accent` | `oklch(0.94 0.04 145)` (бледно-салатовый) | Hover-подсветка |
-| `--accent-foreground` | `oklch(0.25 0.05 145)` | Текст на accent |
-| `--destructive` | `oklch(0.62 0.22 25)` | Ошибки/опасные действия |
-| `--success` | `oklch(0.72 0.17 145)` | Успех, скор >= 70 |
-| `--warning` | `oklch(0.82 0.15 85)` | Внимание, скор 40-69 |
-
-### Токены размеров / радиусов / теней
-
-| Токен | Значение |
-|-------|----------|
-| `--radius` | `0.75rem` (12px) — дружелюбный, не перекошенный |
-| `--font-sans` | `"Inter", ui-sans-serif, system-ui, sans-serif` |
-| `--font-mono` | `"JetBrains Mono", ui-monospace, SFMono-Regular, monospace` |
-| `--shadow-sm` | `0 1px 2px 0 oklch(0 0 0 / 0.05)` |
-| `--shadow-md` | `0 4px 12px -2px oklch(0 0 0 / 0.08)` |
-| `--shadow-lg` | `0 12px 28px -8px oklch(0 0 0 / 0.12)` |
-
-### `frontend/src/styles/index.css` (фрагмент)
-
-```css
-@import "tailwindcss";
-@import "tw-animate-css";
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-success: var(--success);
-  --color-warning: var(--warning);
-
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
-}
-
-:root {
-  --radius: 0.75rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.18 0.01 240);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.01 240);
-  --muted: oklch(0.97 0.005 240);
-  --muted-foreground: oklch(0.5 0.01 240);
-  --border: oklch(0.93 0.005 240);
-  --input: oklch(0.93 0.005 240);
-  --ring: oklch(0.78 0.17 145);
-  --primary: oklch(0.78 0.17 145);
-  --primary-foreground: oklch(0.18 0.01 240);
-  --secondary: oklch(0.97 0.005 240);
-  --secondary-foreground: oklch(0.18 0.01 240);
-  --accent: oklch(0.94 0.04 145);
-  --accent-foreground: oklch(0.25 0.05 145);
-  --destructive: oklch(0.62 0.22 25);
-  --success: oklch(0.72 0.17 145);
-  --warning: oklch(0.82 0.15 85);
-}
-
-@layer base {
-  * { @apply border-border; }
-  body { @apply bg-background text-foreground font-sans antialiased; }
-}
-```
-
 ### Состояния компонентов (стандарты)
 
 - **hover**: фон `accent`, текст `accent-foreground`.
@@ -524,7 +425,7 @@ export default defineConfig({
 
 ---
 
-## 6. Фаза 0 — Снос и базовая настройка
+## 6. Фаза 0 — Снос и базовая настройка - DONE
 
 **Цель**: чистый скелет проекта со стандартной структурой, готовый принимать фичи.
 
@@ -555,7 +456,7 @@ export default defineConfig({
 
 ---
 
-## 7. Фаза 1 — Дизайн-система и тема
+## 7. Фаза 1 — Дизайн-система и тема - DONE
 
 **Цель**: готовый набор shadcn-компонентов, c актуализацией темы под видение дизайна. Дизайн - компонентная база на основе shadcn, базовые компоненты с эффектом матового стекла, с легким ацкентным фоном (салатовый) или рамками.
 
