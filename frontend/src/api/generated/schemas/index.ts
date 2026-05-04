@@ -7,6 +7,7 @@
  */
 
 export * from "./answerQuestionDto";
+export * from "./authResponseDto";
 export * from "./createSessionDto";
 export * from "./createSessionDtoConfig";
 export * from "./loginDto";
@@ -22,6 +23,7 @@ export * from "./testAiModelDto";
 export * from "./testAiModelDtoOperation";
 export * from "./topicsControllerFindAllParams";
 export * from "./topicsControllerFindOneParams";
+export * from "./userPublicDto";
 export * from "./usersControllerFindAllParams";
 export * from "./usersControllerGetProgressParams";
 export * from "./usersControllerGetQuestionAnswerHistoryParams";

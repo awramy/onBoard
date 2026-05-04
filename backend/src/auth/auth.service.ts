@@ -8,6 +8,7 @@ import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { AuthResponseDto } from './dto/auth-response.dto';
 
 @Injectable()
 export class AuthService {
@@ -16,7 +17,7 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async register(dto: RegisterDto) {
+  async register(dto: RegisterDto): Promise<AuthResponseDto> {
     const existing = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
@@ -33,14 +34,14 @@ export class AuthService {
       },
     });
 
-    const token = this.generateToken(user.id, user.email);
+    const access_token = this.generateToken(user.id, user.email);
     return {
-      access_token: token,
+      access_token,
       user: { id: user.id, email: user.email, username: user.username },
     };
   }
 
-  async login(dto: LoginDto) {
+  async login(dto: LoginDto): Promise<AuthResponseDto> {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
@@ -53,9 +54,9 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const token = this.generateToken(user.id, user.email);
+    const access_token = this.generateToken(user.id, user.email);
     return {
-      access_token: token,
+      access_token,
       user: { id: user.id, email: user.email, username: user.username },
     };
   }

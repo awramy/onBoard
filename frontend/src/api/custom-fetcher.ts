@@ -1,4 +1,5 @@
 import axios, { AxiosError, type AxiosRequestConfig } from 'axios';
+import { toast } from 'sonner';
 
 import { env } from '@/config/env';
 import { i18n } from '@/i18n';
@@ -18,13 +19,21 @@ httpInstance.interceptors.request.use((config) => {
   return config;
 });
 
+const AUTH_ENDPOINTS = ['/api/auth/login', '/api/auth/register'];
+
 httpInstance.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
     if (error.response?.status === 401) {
-      useAuthStore.getState().logout();
-      if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
-        window.location.href = '/login';
+      const url = error.config?.url ?? '';
+      const isAuthEndpoint = AUTH_ENDPOINTS.some((ep) => url.includes(ep));
+
+      if (!isAuthEndpoint) {
+        useAuthStore.getState().logout();
+        toast.error(i18n.t('errors.api.sessionExpired'));
+        if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+          window.location.href = '/login';
+        }
       }
     }
     return Promise.reject(error);

@@ -8,20 +8,26 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { RegisterForm } from '@/features/auth/components/RegisterForm';
 import { ROUTES } from '@/routes/routes';
 
 export default function RegisterPage() {
   const { t } = useTranslation();
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>{t('auth.registerTitle')}</CardTitle>
         <CardDescription>{t('auth.registerDescription')}</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex flex-col gap-4">
+        <RegisterForm />
         <p className="text-center text-sm text-muted-foreground">
           {t('auth.haveAccount')}{' '}
-          <Link to={ROUTES.LOGIN} className="underline underline-offset-4 hover:text-foreground">
+          <Link
+            to={ROUTES.LOGIN}
+            className="underline underline-offset-4 hover:text-foreground"
+          >
             {t('auth.login')}
           </Link>
         </p>

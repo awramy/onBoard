@@ -23,6 +23,7 @@ import type {
 
 import type {
   AnswerQuestionDto,
+  AuthResponseDto,
   CreateSessionDto,
   LoginDto,
   QuestionsControllerFindAllParams,
@@ -44,6 +45,7 @@ import type {
 } from "./schemas";
 
 import { customReactQueryAxios } from "../custom-fetcher";
+import type { ErrorType, BodyType } from "../custom-fetcher";
 /**
  * @summary Health check
  */
@@ -61,7 +63,7 @@ export const getAppControllerHealthQueryKey = () => {
 
 export const getAppControllerHealthQueryOptions = <
   TData = Awaited<ReturnType<typeof appControllerHealth>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(options?: {
   query?: Partial<
     UseQueryOptions<
@@ -89,11 +91,11 @@ export const getAppControllerHealthQueryOptions = <
 export type AppControllerHealthQueryResult = NonNullable<
   Awaited<ReturnType<typeof appControllerHealth>>
 >;
-export type AppControllerHealthQueryError = unknown;
+export type AppControllerHealthQueryError = ErrorType<unknown>;
 
 export function useAppControllerHealth<
   TData = Awaited<ReturnType<typeof appControllerHealth>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   options: {
     query: Partial<
@@ -118,7 +120,7 @@ export function useAppControllerHealth<
 };
 export function useAppControllerHealth<
   TData = Awaited<ReturnType<typeof appControllerHealth>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   options?: {
     query?: Partial<
@@ -143,7 +145,7 @@ export function useAppControllerHealth<
 };
 export function useAppControllerHealth<
   TData = Awaited<ReturnType<typeof appControllerHealth>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   options?: {
     query?: Partial<
@@ -164,7 +166,7 @@ export function useAppControllerHealth<
 
 export function useAppControllerHealth<
   TData = Awaited<ReturnType<typeof appControllerHealth>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   options?: {
     query?: Partial<
@@ -193,10 +195,10 @@ export function useAppControllerHealth<
  * @summary Register a new user
  */
 export const authControllerRegister = (
-  registerDto: RegisterDto,
+  registerDto: BodyType<RegisterDto>,
   signal?: AbortSignal,
 ) => {
-  return customReactQueryAxios<void>({
+  return customReactQueryAxios<AuthResponseDto>({
     url: `/api/auth/register`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -206,19 +208,19 @@ export const authControllerRegister = (
 };
 
 export const getAuthControllerRegisterMutationOptions = <
-  TError = unknown,
+  TError = ErrorType<unknown>,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof authControllerRegister>>,
     TError,
-    { data: RegisterDto },
+    { data: BodyType<RegisterDto> },
     TContext
   >;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof authControllerRegister>>,
   TError,
-  { data: RegisterDto },
+  { data: BodyType<RegisterDto> },
   TContext
 > => {
   const mutationKey = ["authControllerRegister"];
@@ -232,7 +234,7 @@ export const getAuthControllerRegisterMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof authControllerRegister>>,
-    { data: RegisterDto }
+    { data: BodyType<RegisterDto> }
   > = (props) => {
     const { data } = props ?? {};
 
@@ -245,18 +247,21 @@ export const getAuthControllerRegisterMutationOptions = <
 export type AuthControllerRegisterMutationResult = NonNullable<
   Awaited<ReturnType<typeof authControllerRegister>>
 >;
-export type AuthControllerRegisterMutationBody = RegisterDto;
-export type AuthControllerRegisterMutationError = unknown;
+export type AuthControllerRegisterMutationBody = BodyType<RegisterDto>;
+export type AuthControllerRegisterMutationError = ErrorType<unknown>;
 
 /**
  * @summary Register a new user
  */
-export const useAuthControllerRegister = <TError = unknown, TContext = unknown>(
+export const useAuthControllerRegister = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof authControllerRegister>>,
       TError,
-      { data: RegisterDto },
+      { data: BodyType<RegisterDto> },
       TContext
     >;
   },
@@ -264,7 +269,7 @@ export const useAuthControllerRegister = <TError = unknown, TContext = unknown>(
 ): UseMutationResult<
   Awaited<ReturnType<typeof authControllerRegister>>,
   TError,
-  { data: RegisterDto },
+  { data: BodyType<RegisterDto> },
   TContext
 > => {
   return useMutation(
@@ -277,10 +282,10 @@ export const useAuthControllerRegister = <TError = unknown, TContext = unknown>(
  * @summary Login with email and password
  */
 export const authControllerLogin = (
-  loginDto: LoginDto,
+  loginDto: BodyType<LoginDto>,
   signal?: AbortSignal,
 ) => {
-  return customReactQueryAxios<void>({
+  return customReactQueryAxios<AuthResponseDto>({
     url: `/api/auth/login`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -290,19 +295,19 @@ export const authControllerLogin = (
 };
 
 export const getAuthControllerLoginMutationOptions = <
-  TError = unknown,
+  TError = ErrorType<unknown>,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof authControllerLogin>>,
     TError,
-    { data: LoginDto },
+    { data: BodyType<LoginDto> },
     TContext
   >;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof authControllerLogin>>,
   TError,
-  { data: LoginDto },
+  { data: BodyType<LoginDto> },
   TContext
 > => {
   const mutationKey = ["authControllerLogin"];
@@ -316,7 +321,7 @@ export const getAuthControllerLoginMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof authControllerLogin>>,
-    { data: LoginDto }
+    { data: BodyType<LoginDto> }
   > = (props) => {
     const { data } = props ?? {};
 
@@ -329,18 +334,21 @@ export const getAuthControllerLoginMutationOptions = <
 export type AuthControllerLoginMutationResult = NonNullable<
   Awaited<ReturnType<typeof authControllerLogin>>
 >;
-export type AuthControllerLoginMutationBody = LoginDto;
-export type AuthControllerLoginMutationError = unknown;
+export type AuthControllerLoginMutationBody = BodyType<LoginDto>;
+export type AuthControllerLoginMutationError = ErrorType<unknown>;
 
 /**
  * @summary Login with email and password
  */
-export const useAuthControllerLogin = <TError = unknown, TContext = unknown>(
+export const useAuthControllerLogin = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof authControllerLogin>>,
       TError,
-      { data: LoginDto },
+      { data: BodyType<LoginDto> },
       TContext
     >;
   },
@@ -348,7 +356,7 @@ export const useAuthControllerLogin = <TError = unknown, TContext = unknown>(
 ): UseMutationResult<
   Awaited<ReturnType<typeof authControllerLogin>>,
   TError,
-  { data: LoginDto },
+  { data: BodyType<LoginDto> },
   TContext
 > => {
   return useMutation(
@@ -380,7 +388,7 @@ export const getTechnologiesControllerFindAllQueryKey = (
 
 export const getTechnologiesControllerFindAllQueryOptions = <
   TData = Awaited<ReturnType<typeof technologiesControllerFindAll>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   params?: TechnologiesControllerFindAllParams,
   options?: {
@@ -412,11 +420,11 @@ export const getTechnologiesControllerFindAllQueryOptions = <
 export type TechnologiesControllerFindAllQueryResult = NonNullable<
   Awaited<ReturnType<typeof technologiesControllerFindAll>>
 >;
-export type TechnologiesControllerFindAllQueryError = unknown;
+export type TechnologiesControllerFindAllQueryError = ErrorType<unknown>;
 
 export function useTechnologiesControllerFindAll<
   TData = Awaited<ReturnType<typeof technologiesControllerFindAll>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   params: undefined | TechnologiesControllerFindAllParams,
   options: {
@@ -442,7 +450,7 @@ export function useTechnologiesControllerFindAll<
 };
 export function useTechnologiesControllerFindAll<
   TData = Awaited<ReturnType<typeof technologiesControllerFindAll>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   params?: TechnologiesControllerFindAllParams,
   options?: {
@@ -468,7 +476,7 @@ export function useTechnologiesControllerFindAll<
 };
 export function useTechnologiesControllerFindAll<
   TData = Awaited<ReturnType<typeof technologiesControllerFindAll>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   params?: TechnologiesControllerFindAllParams,
   options?: {
@@ -490,7 +498,7 @@ export function useTechnologiesControllerFindAll<
 
 export function useTechnologiesControllerFindAll<
   TData = Awaited<ReturnType<typeof technologiesControllerFindAll>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   params?: TechnologiesControllerFindAllParams,
   options?: {
@@ -544,7 +552,7 @@ export const getTechnologiesControllerFindOneQueryKey = (
 
 export const getTechnologiesControllerFindOneQueryOptions = <
   TData = Awaited<ReturnType<typeof technologiesControllerFindOne>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   id: string,
   params?: TechnologiesControllerFindOneParams,
@@ -583,11 +591,11 @@ export const getTechnologiesControllerFindOneQueryOptions = <
 export type TechnologiesControllerFindOneQueryResult = NonNullable<
   Awaited<ReturnType<typeof technologiesControllerFindOne>>
 >;
-export type TechnologiesControllerFindOneQueryError = unknown;
+export type TechnologiesControllerFindOneQueryError = ErrorType<unknown>;
 
 export function useTechnologiesControllerFindOne<
   TData = Awaited<ReturnType<typeof technologiesControllerFindOne>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   id: string,
   params: undefined | TechnologiesControllerFindOneParams,
@@ -614,7 +622,7 @@ export function useTechnologiesControllerFindOne<
 };
 export function useTechnologiesControllerFindOne<
   TData = Awaited<ReturnType<typeof technologiesControllerFindOne>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   id: string,
   params?: TechnologiesControllerFindOneParams,
@@ -641,7 +649,7 @@ export function useTechnologiesControllerFindOne<
 };
 export function useTechnologiesControllerFindOne<
   TData = Awaited<ReturnType<typeof technologiesControllerFindOne>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   id: string,
   params?: TechnologiesControllerFindOneParams,
@@ -664,7 +672,7 @@ export function useTechnologiesControllerFindOne<
 
 export function useTechnologiesControllerFindOne<
   TData = Awaited<ReturnType<typeof technologiesControllerFindOne>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   id: string,
   params?: TechnologiesControllerFindOneParams,
@@ -718,7 +726,7 @@ export const getTopicsControllerFindAllQueryKey = (
 
 export const getTopicsControllerFindAllQueryOptions = <
   TData = Awaited<ReturnType<typeof topicsControllerFindAll>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   params: TopicsControllerFindAllParams,
   options?: {
@@ -750,11 +758,11 @@ export const getTopicsControllerFindAllQueryOptions = <
 export type TopicsControllerFindAllQueryResult = NonNullable<
   Awaited<ReturnType<typeof topicsControllerFindAll>>
 >;
-export type TopicsControllerFindAllQueryError = unknown;
+export type TopicsControllerFindAllQueryError = ErrorType<unknown>;
 
 export function useTopicsControllerFindAll<
   TData = Awaited<ReturnType<typeof topicsControllerFindAll>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   params: TopicsControllerFindAllParams,
   options: {
@@ -780,7 +788,7 @@ export function useTopicsControllerFindAll<
 };
 export function useTopicsControllerFindAll<
   TData = Awaited<ReturnType<typeof topicsControllerFindAll>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   params: TopicsControllerFindAllParams,
   options?: {
@@ -806,7 +814,7 @@ export function useTopicsControllerFindAll<
 };
 export function useTopicsControllerFindAll<
   TData = Awaited<ReturnType<typeof topicsControllerFindAll>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   params: TopicsControllerFindAllParams,
   options?: {
@@ -828,7 +836,7 @@ export function useTopicsControllerFindAll<
 
 export function useTopicsControllerFindAll<
   TData = Awaited<ReturnType<typeof topicsControllerFindAll>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   params: TopicsControllerFindAllParams,
   options?: {
@@ -879,7 +887,7 @@ export const getTopicsControllerFindOneQueryKey = (
 
 export const getTopicsControllerFindOneQueryOptions = <
   TData = Awaited<ReturnType<typeof topicsControllerFindOne>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   id: string,
   params?: TopicsControllerFindOneParams,
@@ -917,11 +925,11 @@ export const getTopicsControllerFindOneQueryOptions = <
 export type TopicsControllerFindOneQueryResult = NonNullable<
   Awaited<ReturnType<typeof topicsControllerFindOne>>
 >;
-export type TopicsControllerFindOneQueryError = unknown;
+export type TopicsControllerFindOneQueryError = ErrorType<unknown>;
 
 export function useTopicsControllerFindOne<
   TData = Awaited<ReturnType<typeof topicsControllerFindOne>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   id: string,
   params: undefined | TopicsControllerFindOneParams,
@@ -948,7 +956,7 @@ export function useTopicsControllerFindOne<
 };
 export function useTopicsControllerFindOne<
   TData = Awaited<ReturnType<typeof topicsControllerFindOne>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   id: string,
   params?: TopicsControllerFindOneParams,
@@ -975,7 +983,7 @@ export function useTopicsControllerFindOne<
 };
 export function useTopicsControllerFindOne<
   TData = Awaited<ReturnType<typeof topicsControllerFindOne>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   id: string,
   params?: TopicsControllerFindOneParams,
@@ -998,7 +1006,7 @@ export function useTopicsControllerFindOne<
 
 export function useTopicsControllerFindOne<
   TData = Awaited<ReturnType<typeof topicsControllerFindOne>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   id: string,
   params?: TopicsControllerFindOneParams,
@@ -1052,7 +1060,7 @@ export const getQuestionsControllerFindAllQueryKey = (
 
 export const getQuestionsControllerFindAllQueryOptions = <
   TData = Awaited<ReturnType<typeof questionsControllerFindAll>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   params: QuestionsControllerFindAllParams,
   options?: {
@@ -1084,11 +1092,11 @@ export const getQuestionsControllerFindAllQueryOptions = <
 export type QuestionsControllerFindAllQueryResult = NonNullable<
   Awaited<ReturnType<typeof questionsControllerFindAll>>
 >;
-export type QuestionsControllerFindAllQueryError = unknown;
+export type QuestionsControllerFindAllQueryError = ErrorType<unknown>;
 
 export function useQuestionsControllerFindAll<
   TData = Awaited<ReturnType<typeof questionsControllerFindAll>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   params: QuestionsControllerFindAllParams,
   options: {
@@ -1114,7 +1122,7 @@ export function useQuestionsControllerFindAll<
 };
 export function useQuestionsControllerFindAll<
   TData = Awaited<ReturnType<typeof questionsControllerFindAll>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   params: QuestionsControllerFindAllParams,
   options?: {
@@ -1140,7 +1148,7 @@ export function useQuestionsControllerFindAll<
 };
 export function useQuestionsControllerFindAll<
   TData = Awaited<ReturnType<typeof questionsControllerFindAll>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   params: QuestionsControllerFindAllParams,
   options?: {
@@ -1162,7 +1170,7 @@ export function useQuestionsControllerFindAll<
 
 export function useQuestionsControllerFindAll<
   TData = Awaited<ReturnType<typeof questionsControllerFindAll>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   params: QuestionsControllerFindAllParams,
   options?: {
@@ -1216,7 +1224,7 @@ export const getQuestionsControllerFindOneQueryKey = (
 
 export const getQuestionsControllerFindOneQueryOptions = <
   TData = Awaited<ReturnType<typeof questionsControllerFindOne>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   id: string,
   params?: QuestionsControllerFindOneParams,
@@ -1254,11 +1262,11 @@ export const getQuestionsControllerFindOneQueryOptions = <
 export type QuestionsControllerFindOneQueryResult = NonNullable<
   Awaited<ReturnType<typeof questionsControllerFindOne>>
 >;
-export type QuestionsControllerFindOneQueryError = unknown;
+export type QuestionsControllerFindOneQueryError = ErrorType<unknown>;
 
 export function useQuestionsControllerFindOne<
   TData = Awaited<ReturnType<typeof questionsControllerFindOne>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   id: string,
   params: undefined | QuestionsControllerFindOneParams,
@@ -1285,7 +1293,7 @@ export function useQuestionsControllerFindOne<
 };
 export function useQuestionsControllerFindOne<
   TData = Awaited<ReturnType<typeof questionsControllerFindOne>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   id: string,
   params?: QuestionsControllerFindOneParams,
@@ -1312,7 +1320,7 @@ export function useQuestionsControllerFindOne<
 };
 export function useQuestionsControllerFindOne<
   TData = Awaited<ReturnType<typeof questionsControllerFindOne>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   id: string,
   params?: QuestionsControllerFindOneParams,
@@ -1335,7 +1343,7 @@ export function useQuestionsControllerFindOne<
 
 export function useQuestionsControllerFindOne<
   TData = Awaited<ReturnType<typeof questionsControllerFindOne>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   id: string,
   params?: QuestionsControllerFindOneParams,
@@ -1383,7 +1391,7 @@ export const getUsersControllerGetProfileQueryKey = () => {
 
 export const getUsersControllerGetProfileQueryOptions = <
   TData = Awaited<ReturnType<typeof usersControllerGetProfile>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(options?: {
   query?: Partial<
     UseQueryOptions<
@@ -1412,11 +1420,11 @@ export const getUsersControllerGetProfileQueryOptions = <
 export type UsersControllerGetProfileQueryResult = NonNullable<
   Awaited<ReturnType<typeof usersControllerGetProfile>>
 >;
-export type UsersControllerGetProfileQueryError = unknown;
+export type UsersControllerGetProfileQueryError = ErrorType<unknown>;
 
 export function useUsersControllerGetProfile<
   TData = Awaited<ReturnType<typeof usersControllerGetProfile>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   options: {
     query: Partial<
@@ -1441,7 +1449,7 @@ export function useUsersControllerGetProfile<
 };
 export function useUsersControllerGetProfile<
   TData = Awaited<ReturnType<typeof usersControllerGetProfile>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   options?: {
     query?: Partial<
@@ -1466,7 +1474,7 @@ export function useUsersControllerGetProfile<
 };
 export function useUsersControllerGetProfile<
   TData = Awaited<ReturnType<typeof usersControllerGetProfile>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   options?: {
     query?: Partial<
@@ -1487,7 +1495,7 @@ export function useUsersControllerGetProfile<
 
 export function useUsersControllerGetProfile<
   TData = Awaited<ReturnType<typeof usersControllerGetProfile>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   options?: {
     query?: Partial<
@@ -1535,7 +1543,7 @@ export const getUsersControllerGetProgressQueryKey = (
 
 export const getUsersControllerGetProgressQueryOptions = <
   TData = Awaited<ReturnType<typeof usersControllerGetProgress>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   params?: UsersControllerGetProgressParams,
   options?: {
@@ -1567,11 +1575,11 @@ export const getUsersControllerGetProgressQueryOptions = <
 export type UsersControllerGetProgressQueryResult = NonNullable<
   Awaited<ReturnType<typeof usersControllerGetProgress>>
 >;
-export type UsersControllerGetProgressQueryError = unknown;
+export type UsersControllerGetProgressQueryError = ErrorType<unknown>;
 
 export function useUsersControllerGetProgress<
   TData = Awaited<ReturnType<typeof usersControllerGetProgress>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   params: undefined | UsersControllerGetProgressParams,
   options: {
@@ -1597,7 +1605,7 @@ export function useUsersControllerGetProgress<
 };
 export function useUsersControllerGetProgress<
   TData = Awaited<ReturnType<typeof usersControllerGetProgress>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   params?: UsersControllerGetProgressParams,
   options?: {
@@ -1623,7 +1631,7 @@ export function useUsersControllerGetProgress<
 };
 export function useUsersControllerGetProgress<
   TData = Awaited<ReturnType<typeof usersControllerGetProgress>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   params?: UsersControllerGetProgressParams,
   options?: {
@@ -1645,7 +1653,7 @@ export function useUsersControllerGetProgress<
 
 export function useUsersControllerGetProgress<
   TData = Awaited<ReturnType<typeof usersControllerGetProgress>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   params?: UsersControllerGetProgressParams,
   options?: {
@@ -1700,7 +1708,7 @@ export const getUsersControllerGetTopicProgressQueryKey = (
 
 export const getUsersControllerGetTopicProgressQueryOptions = <
   TData = Awaited<ReturnType<typeof usersControllerGetTopicProgress>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   params: UsersControllerGetTopicProgressParams,
   options?: {
@@ -1733,11 +1741,11 @@ export const getUsersControllerGetTopicProgressQueryOptions = <
 export type UsersControllerGetTopicProgressQueryResult = NonNullable<
   Awaited<ReturnType<typeof usersControllerGetTopicProgress>>
 >;
-export type UsersControllerGetTopicProgressQueryError = unknown;
+export type UsersControllerGetTopicProgressQueryError = ErrorType<unknown>;
 
 export function useUsersControllerGetTopicProgress<
   TData = Awaited<ReturnType<typeof usersControllerGetTopicProgress>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   params: UsersControllerGetTopicProgressParams,
   options: {
@@ -1763,7 +1771,7 @@ export function useUsersControllerGetTopicProgress<
 };
 export function useUsersControllerGetTopicProgress<
   TData = Awaited<ReturnType<typeof usersControllerGetTopicProgress>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   params: UsersControllerGetTopicProgressParams,
   options?: {
@@ -1789,7 +1797,7 @@ export function useUsersControllerGetTopicProgress<
 };
 export function useUsersControllerGetTopicProgress<
   TData = Awaited<ReturnType<typeof usersControllerGetTopicProgress>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   params: UsersControllerGetTopicProgressParams,
   options?: {
@@ -1811,7 +1819,7 @@ export function useUsersControllerGetTopicProgress<
 
 export function useUsersControllerGetTopicProgress<
   TData = Awaited<ReturnType<typeof usersControllerGetTopicProgress>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   params: UsersControllerGetTopicProgressParams,
   options?: {
@@ -1866,7 +1874,7 @@ export const getUsersControllerGetQuestionProgressQueryKey = (
 
 export const getUsersControllerGetQuestionProgressQueryOptions = <
   TData = Awaited<ReturnType<typeof usersControllerGetQuestionProgress>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   params: UsersControllerGetQuestionProgressParams,
   options?: {
@@ -1899,11 +1907,11 @@ export const getUsersControllerGetQuestionProgressQueryOptions = <
 export type UsersControllerGetQuestionProgressQueryResult = NonNullable<
   Awaited<ReturnType<typeof usersControllerGetQuestionProgress>>
 >;
-export type UsersControllerGetQuestionProgressQueryError = unknown;
+export type UsersControllerGetQuestionProgressQueryError = ErrorType<unknown>;
 
 export function useUsersControllerGetQuestionProgress<
   TData = Awaited<ReturnType<typeof usersControllerGetQuestionProgress>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   params: UsersControllerGetQuestionProgressParams,
   options: {
@@ -1929,7 +1937,7 @@ export function useUsersControllerGetQuestionProgress<
 };
 export function useUsersControllerGetQuestionProgress<
   TData = Awaited<ReturnType<typeof usersControllerGetQuestionProgress>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   params: UsersControllerGetQuestionProgressParams,
   options?: {
@@ -1955,7 +1963,7 @@ export function useUsersControllerGetQuestionProgress<
 };
 export function useUsersControllerGetQuestionProgress<
   TData = Awaited<ReturnType<typeof usersControllerGetQuestionProgress>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   params: UsersControllerGetQuestionProgressParams,
   options?: {
@@ -1977,7 +1985,7 @@ export function useUsersControllerGetQuestionProgress<
 
 export function useUsersControllerGetQuestionProgress<
   TData = Awaited<ReturnType<typeof usersControllerGetQuestionProgress>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   params: UsersControllerGetQuestionProgressParams,
   options?: {
@@ -2034,7 +2042,7 @@ export const getUsersControllerGetQuestionAnswerHistoryQueryKey = (
 
 export const getUsersControllerGetQuestionAnswerHistoryQueryOptions = <
   TData = Awaited<ReturnType<typeof usersControllerGetQuestionAnswerHistory>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   questionId: string,
   params?: UsersControllerGetQuestionAnswerHistoryParams,
@@ -2074,11 +2082,12 @@ export const getUsersControllerGetQuestionAnswerHistoryQueryOptions = <
 export type UsersControllerGetQuestionAnswerHistoryQueryResult = NonNullable<
   Awaited<ReturnType<typeof usersControllerGetQuestionAnswerHistory>>
 >;
-export type UsersControllerGetQuestionAnswerHistoryQueryError = unknown;
+export type UsersControllerGetQuestionAnswerHistoryQueryError =
+  ErrorType<unknown>;
 
 export function useUsersControllerGetQuestionAnswerHistory<
   TData = Awaited<ReturnType<typeof usersControllerGetQuestionAnswerHistory>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   questionId: string,
   params: undefined | UsersControllerGetQuestionAnswerHistoryParams,
@@ -2105,7 +2114,7 @@ export function useUsersControllerGetQuestionAnswerHistory<
 };
 export function useUsersControllerGetQuestionAnswerHistory<
   TData = Awaited<ReturnType<typeof usersControllerGetQuestionAnswerHistory>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   questionId: string,
   params?: UsersControllerGetQuestionAnswerHistoryParams,
@@ -2132,7 +2141,7 @@ export function useUsersControllerGetQuestionAnswerHistory<
 };
 export function useUsersControllerGetQuestionAnswerHistory<
   TData = Awaited<ReturnType<typeof usersControllerGetQuestionAnswerHistory>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   questionId: string,
   params?: UsersControllerGetQuestionAnswerHistoryParams,
@@ -2155,7 +2164,7 @@ export function useUsersControllerGetQuestionAnswerHistory<
 
 export function useUsersControllerGetQuestionAnswerHistory<
   TData = Awaited<ReturnType<typeof usersControllerGetQuestionAnswerHistory>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   questionId: string,
   params?: UsersControllerGetQuestionAnswerHistoryParams,
@@ -2209,7 +2218,7 @@ export const getUsersControllerFindAllQueryKey = (
 
 export const getUsersControllerFindAllQueryOptions = <
   TData = Awaited<ReturnType<typeof usersControllerFindAll>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   params?: UsersControllerFindAllParams,
   options?: {
@@ -2241,11 +2250,11 @@ export const getUsersControllerFindAllQueryOptions = <
 export type UsersControllerFindAllQueryResult = NonNullable<
   Awaited<ReturnType<typeof usersControllerFindAll>>
 >;
-export type UsersControllerFindAllQueryError = unknown;
+export type UsersControllerFindAllQueryError = ErrorType<unknown>;
 
 export function useUsersControllerFindAll<
   TData = Awaited<ReturnType<typeof usersControllerFindAll>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   params: undefined | UsersControllerFindAllParams,
   options: {
@@ -2271,7 +2280,7 @@ export function useUsersControllerFindAll<
 };
 export function useUsersControllerFindAll<
   TData = Awaited<ReturnType<typeof usersControllerFindAll>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   params?: UsersControllerFindAllParams,
   options?: {
@@ -2297,7 +2306,7 @@ export function useUsersControllerFindAll<
 };
 export function useUsersControllerFindAll<
   TData = Awaited<ReturnType<typeof usersControllerFindAll>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   params?: UsersControllerFindAllParams,
   options?: {
@@ -2319,7 +2328,7 @@ export function useUsersControllerFindAll<
 
 export function useUsersControllerFindAll<
   TData = Awaited<ReturnType<typeof usersControllerFindAll>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   params?: UsersControllerFindAllParams,
   options?: {
@@ -2362,7 +2371,7 @@ export const getAiControllerGetProvidersQueryKey = () => {
 
 export const getAiControllerGetProvidersQueryOptions = <
   TData = Awaited<ReturnType<typeof aiControllerGetProviders>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(options?: {
   query?: Partial<
     UseQueryOptions<
@@ -2391,11 +2400,11 @@ export const getAiControllerGetProvidersQueryOptions = <
 export type AiControllerGetProvidersQueryResult = NonNullable<
   Awaited<ReturnType<typeof aiControllerGetProviders>>
 >;
-export type AiControllerGetProvidersQueryError = unknown;
+export type AiControllerGetProvidersQueryError = ErrorType<unknown>;
 
 export function useAiControllerGetProviders<
   TData = Awaited<ReturnType<typeof aiControllerGetProviders>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   options: {
     query: Partial<
@@ -2420,7 +2429,7 @@ export function useAiControllerGetProviders<
 };
 export function useAiControllerGetProviders<
   TData = Awaited<ReturnType<typeof aiControllerGetProviders>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   options?: {
     query?: Partial<
@@ -2445,7 +2454,7 @@ export function useAiControllerGetProviders<
 };
 export function useAiControllerGetProviders<
   TData = Awaited<ReturnType<typeof aiControllerGetProviders>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   options?: {
     query?: Partial<
@@ -2466,7 +2475,7 @@ export function useAiControllerGetProviders<
 
 export function useAiControllerGetProviders<
   TData = Awaited<ReturnType<typeof aiControllerGetProviders>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   options?: {
     query?: Partial<
@@ -2508,7 +2517,7 @@ export const getAiControllerGetGeminiEgressQueryKey = () => {
 
 export const getAiControllerGetGeminiEgressQueryOptions = <
   TData = Awaited<ReturnType<typeof aiControllerGetGeminiEgress>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(options?: {
   query?: Partial<
     UseQueryOptions<
@@ -2537,11 +2546,11 @@ export const getAiControllerGetGeminiEgressQueryOptions = <
 export type AiControllerGetGeminiEgressQueryResult = NonNullable<
   Awaited<ReturnType<typeof aiControllerGetGeminiEgress>>
 >;
-export type AiControllerGetGeminiEgressQueryError = unknown;
+export type AiControllerGetGeminiEgressQueryError = ErrorType<unknown>;
 
 export function useAiControllerGetGeminiEgress<
   TData = Awaited<ReturnType<typeof aiControllerGetGeminiEgress>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   options: {
     query: Partial<
@@ -2566,7 +2575,7 @@ export function useAiControllerGetGeminiEgress<
 };
 export function useAiControllerGetGeminiEgress<
   TData = Awaited<ReturnType<typeof aiControllerGetGeminiEgress>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   options?: {
     query?: Partial<
@@ -2591,7 +2600,7 @@ export function useAiControllerGetGeminiEgress<
 };
 export function useAiControllerGetGeminiEgress<
   TData = Awaited<ReturnType<typeof aiControllerGetGeminiEgress>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   options?: {
     query?: Partial<
@@ -2612,7 +2621,7 @@ export function useAiControllerGetGeminiEgress<
 
 export function useAiControllerGetGeminiEgress<
   TData = Awaited<ReturnType<typeof aiControllerGetGeminiEgress>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   options?: {
     query?: Partial<
@@ -2641,7 +2650,7 @@ export function useAiControllerGetGeminiEgress<
  * @summary Run a lightweight test request against one or all AI models
  */
 export const aiControllerTestModels = (
-  testAiModelDto?: TestAiModelDto,
+  testAiModelDto?: BodyType<TestAiModelDto>,
   signal?: AbortSignal,
 ) => {
   return customReactQueryAxios<void>({
@@ -2654,19 +2663,19 @@ export const aiControllerTestModels = (
 };
 
 export const getAiControllerTestModelsMutationOptions = <
-  TError = unknown,
+  TError = ErrorType<unknown>,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof aiControllerTestModels>>,
     TError,
-    { data: TestAiModelDto },
+    { data: BodyType<TestAiModelDto> },
     TContext
   >;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof aiControllerTestModels>>,
   TError,
-  { data: TestAiModelDto },
+  { data: BodyType<TestAiModelDto> },
   TContext
 > => {
   const mutationKey = ["aiControllerTestModels"];
@@ -2680,7 +2689,7 @@ export const getAiControllerTestModelsMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof aiControllerTestModels>>,
-    { data: TestAiModelDto }
+    { data: BodyType<TestAiModelDto> }
   > = (props) => {
     const { data } = props ?? {};
 
@@ -2693,18 +2702,21 @@ export const getAiControllerTestModelsMutationOptions = <
 export type AiControllerTestModelsMutationResult = NonNullable<
   Awaited<ReturnType<typeof aiControllerTestModels>>
 >;
-export type AiControllerTestModelsMutationBody = TestAiModelDto;
-export type AiControllerTestModelsMutationError = unknown;
+export type AiControllerTestModelsMutationBody = BodyType<TestAiModelDto>;
+export type AiControllerTestModelsMutationError = ErrorType<unknown>;
 
 /**
  * @summary Run a lightweight test request against one or all AI models
  */
-export const useAiControllerTestModels = <TError = unknown, TContext = unknown>(
+export const useAiControllerTestModels = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof aiControllerTestModels>>,
       TError,
-      { data: TestAiModelDto },
+      { data: BodyType<TestAiModelDto> },
       TContext
     >;
   },
@@ -2712,7 +2724,7 @@ export const useAiControllerTestModels = <TError = unknown, TContext = unknown>(
 ): UseMutationResult<
   Awaited<ReturnType<typeof aiControllerTestModels>>,
   TError,
-  { data: TestAiModelDto },
+  { data: BodyType<TestAiModelDto> },
   TContext
 > => {
   return useMutation(
@@ -2725,7 +2737,7 @@ export const useAiControllerTestModels = <TError = unknown, TContext = unknown>(
  * @summary Create a new interview session
  */
 export const sessionsControllerCreate = (
-  createSessionDto: CreateSessionDto,
+  createSessionDto: BodyType<CreateSessionDto>,
   signal?: AbortSignal,
 ) => {
   return customReactQueryAxios<void>({
@@ -2738,19 +2750,19 @@ export const sessionsControllerCreate = (
 };
 
 export const getSessionsControllerCreateMutationOptions = <
-  TError = unknown,
+  TError = ErrorType<unknown>,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof sessionsControllerCreate>>,
     TError,
-    { data: CreateSessionDto },
+    { data: BodyType<CreateSessionDto> },
     TContext
   >;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof sessionsControllerCreate>>,
   TError,
-  { data: CreateSessionDto },
+  { data: BodyType<CreateSessionDto> },
   TContext
 > => {
   const mutationKey = ["sessionsControllerCreate"];
@@ -2764,7 +2776,7 @@ export const getSessionsControllerCreateMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof sessionsControllerCreate>>,
-    { data: CreateSessionDto }
+    { data: BodyType<CreateSessionDto> }
   > = (props) => {
     const { data } = props ?? {};
 
@@ -2777,21 +2789,21 @@ export const getSessionsControllerCreateMutationOptions = <
 export type SessionsControllerCreateMutationResult = NonNullable<
   Awaited<ReturnType<typeof sessionsControllerCreate>>
 >;
-export type SessionsControllerCreateMutationBody = CreateSessionDto;
-export type SessionsControllerCreateMutationError = unknown;
+export type SessionsControllerCreateMutationBody = BodyType<CreateSessionDto>;
+export type SessionsControllerCreateMutationError = ErrorType<unknown>;
 
 /**
  * @summary Create a new interview session
  */
 export const useSessionsControllerCreate = <
-  TError = unknown,
+  TError = ErrorType<unknown>,
   TContext = unknown,
 >(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof sessionsControllerCreate>>,
       TError,
-      { data: CreateSessionDto },
+      { data: BodyType<CreateSessionDto> },
       TContext
     >;
   },
@@ -2799,7 +2811,7 @@ export const useSessionsControllerCreate = <
 ): UseMutationResult<
   Awaited<ReturnType<typeof sessionsControllerCreate>>,
   TError,
-  { data: CreateSessionDto },
+  { data: BodyType<CreateSessionDto> },
   TContext
 > => {
   return useMutation(
@@ -2831,7 +2843,7 @@ export const getSessionsControllerFindAllQueryKey = (
 
 export const getSessionsControllerFindAllQueryOptions = <
   TData = Awaited<ReturnType<typeof sessionsControllerFindAll>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   params?: SessionsControllerFindAllParams,
   options?: {
@@ -2863,11 +2875,11 @@ export const getSessionsControllerFindAllQueryOptions = <
 export type SessionsControllerFindAllQueryResult = NonNullable<
   Awaited<ReturnType<typeof sessionsControllerFindAll>>
 >;
-export type SessionsControllerFindAllQueryError = unknown;
+export type SessionsControllerFindAllQueryError = ErrorType<unknown>;
 
 export function useSessionsControllerFindAll<
   TData = Awaited<ReturnType<typeof sessionsControllerFindAll>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   params: undefined | SessionsControllerFindAllParams,
   options: {
@@ -2893,7 +2905,7 @@ export function useSessionsControllerFindAll<
 };
 export function useSessionsControllerFindAll<
   TData = Awaited<ReturnType<typeof sessionsControllerFindAll>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   params?: SessionsControllerFindAllParams,
   options?: {
@@ -2919,7 +2931,7 @@ export function useSessionsControllerFindAll<
 };
 export function useSessionsControllerFindAll<
   TData = Awaited<ReturnType<typeof sessionsControllerFindAll>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   params?: SessionsControllerFindAllParams,
   options?: {
@@ -2941,7 +2953,7 @@ export function useSessionsControllerFindAll<
 
 export function useSessionsControllerFindAll<
   TData = Awaited<ReturnType<typeof sessionsControllerFindAll>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   params?: SessionsControllerFindAllParams,
   options?: {
@@ -2995,7 +3007,7 @@ export const getSessionsControllerFindOneQueryKey = (
 
 export const getSessionsControllerFindOneQueryOptions = <
   TData = Awaited<ReturnType<typeof sessionsControllerFindOne>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   id: string,
   params?: SessionsControllerFindOneParams,
@@ -3033,11 +3045,11 @@ export const getSessionsControllerFindOneQueryOptions = <
 export type SessionsControllerFindOneQueryResult = NonNullable<
   Awaited<ReturnType<typeof sessionsControllerFindOne>>
 >;
-export type SessionsControllerFindOneQueryError = unknown;
+export type SessionsControllerFindOneQueryError = ErrorType<unknown>;
 
 export function useSessionsControllerFindOne<
   TData = Awaited<ReturnType<typeof sessionsControllerFindOne>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   id: string,
   params: undefined | SessionsControllerFindOneParams,
@@ -3064,7 +3076,7 @@ export function useSessionsControllerFindOne<
 };
 export function useSessionsControllerFindOne<
   TData = Awaited<ReturnType<typeof sessionsControllerFindOne>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   id: string,
   params?: SessionsControllerFindOneParams,
@@ -3091,7 +3103,7 @@ export function useSessionsControllerFindOne<
 };
 export function useSessionsControllerFindOne<
   TData = Awaited<ReturnType<typeof sessionsControllerFindOne>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   id: string,
   params?: SessionsControllerFindOneParams,
@@ -3114,7 +3126,7 @@ export function useSessionsControllerFindOne<
 
 export function useSessionsControllerFindOne<
   TData = Awaited<ReturnType<typeof sessionsControllerFindOne>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   id: string,
   params?: SessionsControllerFindOneParams,
@@ -3162,7 +3174,7 @@ export const sessionsControllerStart = (
 };
 
 export const getSessionsControllerStartMutationOptions = <
-  TError = unknown,
+  TError = ErrorType<unknown>,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -3202,13 +3214,13 @@ export type SessionsControllerStartMutationResult = NonNullable<
   Awaited<ReturnType<typeof sessionsControllerStart>>
 >;
 
-export type SessionsControllerStartMutationError = unknown;
+export type SessionsControllerStartMutationError = ErrorType<unknown>;
 
 /**
  * @summary Start a planned session — generates questions
  */
 export const useSessionsControllerStart = <
-  TError = unknown,
+  TError = ErrorType<unknown>,
   TContext = unknown,
 >(
   options?: {
@@ -3252,7 +3264,7 @@ export const getSessionsControllerCurrentQuestionQueryKey = (id: string) => {
 
 export const getSessionsControllerCurrentQuestionQueryOptions = <
   TData = Awaited<ReturnType<typeof sessionsControllerCurrentQuestion>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   id: string,
   options?: {
@@ -3289,11 +3301,11 @@ export const getSessionsControllerCurrentQuestionQueryOptions = <
 export type SessionsControllerCurrentQuestionQueryResult = NonNullable<
   Awaited<ReturnType<typeof sessionsControllerCurrentQuestion>>
 >;
-export type SessionsControllerCurrentQuestionQueryError = unknown;
+export type SessionsControllerCurrentQuestionQueryError = ErrorType<unknown>;
 
 export function useSessionsControllerCurrentQuestion<
   TData = Awaited<ReturnType<typeof sessionsControllerCurrentQuestion>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   id: string,
   options: {
@@ -3319,7 +3331,7 @@ export function useSessionsControllerCurrentQuestion<
 };
 export function useSessionsControllerCurrentQuestion<
   TData = Awaited<ReturnType<typeof sessionsControllerCurrentQuestion>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   id: string,
   options?: {
@@ -3345,7 +3357,7 @@ export function useSessionsControllerCurrentQuestion<
 };
 export function useSessionsControllerCurrentQuestion<
   TData = Awaited<ReturnType<typeof sessionsControllerCurrentQuestion>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   id: string,
   options?: {
@@ -3367,7 +3379,7 @@ export function useSessionsControllerCurrentQuestion<
 
 export function useSessionsControllerCurrentQuestion<
   TData = Awaited<ReturnType<typeof sessionsControllerCurrentQuestion>>,
-  TError = unknown,
+  TError = ErrorType<unknown>,
 >(
   id: string,
   options?: {
@@ -3408,7 +3420,7 @@ export const sessionsControllerSkip = (id: string, signal?: AbortSignal) => {
 };
 
 export const getSessionsControllerSkipMutationOptions = <
-  TError = unknown,
+  TError = ErrorType<unknown>,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -3448,12 +3460,15 @@ export type SessionsControllerSkipMutationResult = NonNullable<
   Awaited<ReturnType<typeof sessionsControllerSkip>>
 >;
 
-export type SessionsControllerSkipMutationError = unknown;
+export type SessionsControllerSkipMutationError = ErrorType<unknown>;
 
 /**
  * @summary Skip the current question (score = 0)
  */
-export const useSessionsControllerSkip = <TError = unknown, TContext = unknown>(
+export const useSessionsControllerSkip = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof sessionsControllerSkip>>,
@@ -3480,7 +3495,7 @@ export const useSessionsControllerSkip = <TError = unknown, TContext = unknown>(
  */
 export const sessionsControllerAnswer = (
   id: string,
-  answerQuestionDto: AnswerQuestionDto,
+  answerQuestionDto: BodyType<AnswerQuestionDto>,
   signal?: AbortSignal,
 ) => {
   return customReactQueryAxios<void>({
@@ -3493,19 +3508,19 @@ export const sessionsControllerAnswer = (
 };
 
 export const getSessionsControllerAnswerMutationOptions = <
-  TError = unknown,
+  TError = ErrorType<unknown>,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof sessionsControllerAnswer>>,
     TError,
-    { id: string; data: AnswerQuestionDto },
+    { id: string; data: BodyType<AnswerQuestionDto> },
     TContext
   >;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof sessionsControllerAnswer>>,
   TError,
-  { id: string; data: AnswerQuestionDto },
+  { id: string; data: BodyType<AnswerQuestionDto> },
   TContext
 > => {
   const mutationKey = ["sessionsControllerAnswer"];
@@ -3519,7 +3534,7 @@ export const getSessionsControllerAnswerMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof sessionsControllerAnswer>>,
-    { id: string; data: AnswerQuestionDto }
+    { id: string; data: BodyType<AnswerQuestionDto> }
   > = (props) => {
     const { id, data } = props ?? {};
 
@@ -3532,21 +3547,21 @@ export const getSessionsControllerAnswerMutationOptions = <
 export type SessionsControllerAnswerMutationResult = NonNullable<
   Awaited<ReturnType<typeof sessionsControllerAnswer>>
 >;
-export type SessionsControllerAnswerMutationBody = AnswerQuestionDto;
-export type SessionsControllerAnswerMutationError = unknown;
+export type SessionsControllerAnswerMutationBody = BodyType<AnswerQuestionDto>;
+export type SessionsControllerAnswerMutationError = ErrorType<unknown>;
 
 /**
  * @summary Submit an answer; AI evaluates, updates progress, advances
  */
 export const useSessionsControllerAnswer = <
-  TError = unknown,
+  TError = ErrorType<unknown>,
   TContext = unknown,
 >(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof sessionsControllerAnswer>>,
       TError,
-      { id: string; data: AnswerQuestionDto },
+      { id: string; data: BodyType<AnswerQuestionDto> },
       TContext
     >;
   },
@@ -3554,7 +3569,7 @@ export const useSessionsControllerAnswer = <
 ): UseMutationResult<
   Awaited<ReturnType<typeof sessionsControllerAnswer>>,
   TError,
-  { id: string; data: AnswerQuestionDto },
+  { id: string; data: BodyType<AnswerQuestionDto> },
   TContext
 > => {
   return useMutation(
@@ -3575,7 +3590,7 @@ export const sessionsControllerFinish = (id: string, signal?: AbortSignal) => {
 };
 
 export const getSessionsControllerFinishMutationOptions = <
-  TError = unknown,
+  TError = ErrorType<unknown>,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -3615,13 +3630,13 @@ export type SessionsControllerFinishMutationResult = NonNullable<
   Awaited<ReturnType<typeof sessionsControllerFinish>>
 >;
 
-export type SessionsControllerFinishMutationError = unknown;
+export type SessionsControllerFinishMutationError = ErrorType<unknown>;
 
 /**
  * @summary Finish session — compute score, update user league
  */
 export const useSessionsControllerFinish = <
-  TError = unknown,
+  TError = ErrorType<unknown>,
   TContext = unknown,
 >(
   options?: {
@@ -3657,7 +3672,7 @@ export const sessionsControllerAbandon = (id: string, signal?: AbortSignal) => {
 };
 
 export const getSessionsControllerAbandonMutationOptions = <
-  TError = unknown,
+  TError = ErrorType<unknown>,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -3697,13 +3712,13 @@ export type SessionsControllerAbandonMutationResult = NonNullable<
   Awaited<ReturnType<typeof sessionsControllerAbandon>>
 >;
 
-export type SessionsControllerAbandonMutationError = unknown;
+export type SessionsControllerAbandonMutationError = ErrorType<unknown>;
 
 /**
  * @summary Abandon session early — progress on answered questions is kept
  */
 export const useSessionsControllerAbandon = <
-  TError = unknown,
+  TError = ErrorType<unknown>,
   TContext = unknown,
 >(
   options?: {

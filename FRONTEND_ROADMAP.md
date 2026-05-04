@@ -582,73 +582,68 @@ export default function App() {
 
 ---
 
-## 9. Фаза 3 — Auth
+## 9. Фаза 3 — Auth ✅
 
 **Цель**: зарегистрировались → залогинились → попали на `/`.
 
-### 9.1 Auth store
+### 9.1 Backend: типизация ответа
 
-`src/stores/auth.store.ts`:
+Добавлены два DTO чтобы orval мог сгенерировать строгий тип ответа (вместо `void`):
+
+- `backend/src/auth/dto/user-public.dto.ts` — `UserPublicDto { id, email, username }`
+- `backend/src/auth/dto/auth-response.dto.ts` — `AuthResponseDto { access_token, user: UserPublicDto }`
+
+Эндпоинты декорированы `@ApiCreatedResponse` / `@ApiOkResponse`. После `pnpm run orval:generate` из фронта появляются `authResponseDto.ts` и `userPublicDto.ts` в `src/api/generated/schemas/`.
+
+### 9.2 Auth store
+
+`src/stores/auth.store.ts` — **уже был реализован** в рамках Фазы 2. Ключевые детали фактической реализации:
 
 ```ts
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import type { User } from '@/api/generated/schemas';
+export type AuthUser = {
+  id: string;
+  username: string;
+  email?: string; // опциональный — совместим с обязательным email из бэка
+};
 
 type AuthState = {
   token: string | null;
-  user: User | null;
-  setAuth: (token: string, user: User) => void;
+  user: AuthUser | null;
+  setAuth: (payload: { token: string; user: AuthUser }) => void; // объект, не позиционные аргументы
+  setUser: (user: AuthUser | null) => void;
   logout: () => void;
   isAuthenticated: () => boolean;
 };
-
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set, get) => ({
-      token: null,
-      user: null,
-      setAuth: (token, user) => set({ token, user }),
-      logout: () => set({ token: null, user: null }),
-      isAuthenticated: () => !!get().token,
-    }),
-    { name: 'onboard:auth', storage: createJSONStorage(() => localStorage) },
-  ),
-);
 ```
 
-### 9.2 Бизнес-хуки поверх orval
+Persist-ключ: `'onboard-auth'` (в localStorage). `partialize` сохраняет только `{ token, user }`.
+
+> `AuthUser` — локальный тип, а не `User` из generated-схем: у бэка нет отдельного GET /users/me endpoint с `@ApiOkResponse` на данном этапе. Когда появится — заменить на `import type { UserPublicDto } from '@/api/generated/schemas'`.
+
+### 9.3 Бизнес-хуки поверх orval
 
 **Никаких самописных api-модулей** — логинимся через сгенерированный `useAuthControllerLogin()`. Wrapper только добавляет эффекты:
 
 ```ts
 // src/features/auth/hooks/useLogin.ts
-import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
-import { useAuthControllerLogin } from '@/api/generated/react-query';
-import { useAuthStore } from '@/stores/auth.store';
-import { queryClient } from '@/api/query-client';
-import { getApiErrorMessage } from '@/lib/api-error';
-
-export const useLogin = () => {
+export function useLogin() {
   const setAuth = useAuthStore((s) => s.setAuth);
   const navigate = useNavigate();
 
   return useAuthControllerLogin({
     mutation: {
       onSuccess: ({ access_token, user }) => {
-        setAuth(access_token, user);
-        // Сид кэша для первого рендера
+        setAuth({ token: access_token, user }); // объектная форма setAuth
         queryClient.setQueryData(['/users/me'], user);
-        navigate('/', { replace: true });
+        void navigate(ROUTES.DASHBOARD, { replace: true });
       },
       onError: (err) => toast.error(getApiErrorMessage(err)),
     },
   });
-};
+}
 ```
 
-Аналогично `useRegister.ts` — оборачивает `useAuthControllerRegister()`.
+Аналогично `useRegister.ts` — оборачивает `useAuthControllerRegister()`. Оба хука типизированы через `AuthResponseDto` из сгенерированных схем.
 
 Использование в `LoginForm`:
 
@@ -657,36 +652,64 @@ const { mutate, isPending } = useLogin();
 const onSubmit = (values: LoginInput) => mutate({ data: values });
 ```
 
-> `{ data: values }` — стандартный wrapper orval для body-мутаций. Типы `LoginDto`/`RegisterDto` — из `@/api/generated/schemas`. Zod из `@/api/generated/zod` — **после** добавления отдельного orval-target `client: 'zod'` (см. [§4.1](#41-конфигурация-orval-фактическое-состояние)); до этого — свои zod-схемы в `features/auth/schemas.ts` или вручную.
+> `{ data: values }` — стандартный wrapper orval для body-мутаций.
 
-### 9.3 Формы
+### 9.4 Утилита ошибок
 
-Если в orval добавлен zod-target — используем схемы **из `@/api/generated/zod`**. Пока target нет, колонка ниже — план/пример:
+`src/lib/api-error.ts` — `getApiErrorMessage(error)` маппит HTTP-статусы на i18n-ключи:
+
+| Статус | i18n-ключ |
+|--------|-----------|
+| 401 | `errors.api.invalidCredentials` |
+| 409 | `errors.api.emailTaken` |
+| 400 | `errors.api.badRequest` (или `response.data.message`) |
+| иначе | `errors.api.unknown` |
+
+### 9.5 Формы
+
+**shadcn Form** добавлен вручную: `src/components/ui/form.tsx` — `Form`, `FormField`, `FormItem`, `FormLabel`, `FormControl`, `FormMessage`. Использует `react-hook-form` `Controller` + `@radix-ui/react-slot`.
+
+Zod-схемы в `src/features/auth/schemas.ts` — самописные (orval-target `client: 'zod'` не добавлен). Сообщения об ошибках хранят i18n-ключи, переводятся в компоненте через `t(fieldState.error.message)`:
 
 ```ts
-// src/features/auth/schemas.ts
-import { authControllerLoginBody, authControllerRegisterBody } from '@/api/generated/zod';
+export const loginSchema = z.object({
+  email: z.string().email('errors.form.email'),
+  password: z.string().min(1, 'errors.form.passwordRequired'),
+});
 
-export const loginSchema = authControllerLoginBody;
-export const registerSchema = authControllerRegisterBody;
-
-export type LoginInput = z.infer<typeof loginSchema>;
-export type RegisterInput = z.infer<typeof registerSchema>;
+export const registerSchema = z.object({
+  email: z.string().email('errors.form.email'),
+  password: z.string().min(6, 'errors.form.passwordMin'),
+  username: z.string().min(2, 'errors.form.usernameMin'),
+});
 ```
 
-Если на бэке забыли добавить ограничение (`@MinLength`, `@IsEmail`) — это видно сразу в сгенерированной схеме и правится на бэке, а не дублируется вручную на фронте.
+Ограничения `min(6)` / `min(2)` зеркалят `@MinLength` на бэке — если бэк изменится, менять нужно оба места. Когда появится orval zod-target — заменить на сгенерированные схемы.
 
-`LoginForm.tsx` / `RegisterForm.tsx` — react-hook-form + `zodResolver(loginSchema)` + shadcn `<Form>`.
+`LoginForm.tsx` / `RegisterForm.tsx` — `useForm` + `zodResolver` + shadcn `<Form>` + shadcn `<Input>` / `<Button>`.
 
-### 9.4 Страницы
+### 9.6 Страницы
 
-- `pages/LoginPage.tsx`, `pages/RegisterPage.tsx` — тонкие, рендерят форму внутри `AuthLayout` (который уже обёрнут в `PublicRoute` в роутере).
+`pages/LoginPage.tsx`, `pages/RegisterPage.tsx` — тонкие, рендерят форму внутри `<Card>`. `AuthLayout` (обёрнут в `PublicRoute` в роутере) не изменялся.
 
-### Критерий готовности
+### 9.7 HTTP-слой: исправления и улучшения
+
+**`src/api/custom-fetcher.ts`**:
+- Response-interceptor при `401`: если URL не является auth-эндпоинтом (`/api/auth/login`, `/api/auth/register`) — `logout()` + `toast.error(t('errors.api.sessionExpired'))` + редирект на `/login`. На auth-эндпоинтах 401 — обычная ошибка валидации, обрабатывается в `useLogin.onError`.
+
+**`src/config/env.ts`**:
+- `apiBaseUrl` изменён с `'/api'` на `''`. Причина: orval генерирует URL как `/api/auth/login` (полный путь), а Vite proxy `/api → http://localhost:3000` сохраняет путь без rewrite. `baseURL='/api'` давал двойной префикс `/api/api/...`.
+
+**`src/i18n/locales/{ru,en}.json`** — добавлены ключи:
+- `auth.{email,password,username,emailPlaceholder,passwordPlaceholder,usernamePlaceholder,submitLogin,submitRegister,submitting}`
+- `errors.api.{invalidCredentials,emailTaken,badRequest,sessionExpired,unknown}`
+- `errors.form.{email,passwordRequired,passwordMin,usernameRequired,usernameMin}`
+
+### Критерий готовности ✅
 
 - Регистрация → автологин → редирект на `/`.
-- Logout из Topbar user-menu → редирект `/login`, state сохраняется в localStorage.
-- 401 от любого API → auto-logout + toast "Session expired".
+- Logout из Topbar user-menu → редирект `/login`, state сохраняется в localStorage под ключом `onboard-auth`.
+- 401 от любого не-auth API → auto-logout + toast «Сеанс истёк» + редирект на `/login`.
 
 ---
 

@@ -15,13 +15,21 @@
     "login": "Войти",
     "register": "Регистрация",
     "logout": "Выйти",
-    "loginAsDev": "Войти как dev",
     "loginTitle": "Вход в onBoard",
-    "loginDescription": "Авторизация будет включена в Фазе 3. Пока — заглушка для разработки.",
+    "loginDescription": "Войдите в аккаунт, чтобы продолжить",
     "registerTitle": "Создать аккаунт",
-    "registerDescription": "Регистрация появится в Фазе 3.",
+    "registerDescription": "Зарегистрируйтесь, чтобы начать подготовку к собеседованиям",
     "haveAccount": "Уже есть аккаунт?",
-    "noAccount": "Ещё нет аккаунта?"
+    "noAccount": "Ещё нет аккаунта?",
+    "email": "Email",
+    "password": "Пароль",
+    "username": "Имя пользователя",
+    "emailPlaceholder": "you@example.com",
+    "passwordPlaceholder": "••••••",
+    "usernamePlaceholder": "johndoe",
+    "submitLogin": "Войти",
+    "submitRegister": "Создать аккаунт",
+    "submitting": "Загрузка..."
   },
   "user": {
     "anonymous": "Гость"
@@ -37,7 +45,21 @@
     "reload": "Перезагрузить",
     "notFoundTitle": "Страница не найдена",
     "notFoundDescription": "Адрес неверный или раздел ещё не реализован.",
-    "goHome": "На главную"
+    "goHome": "На главную",
+    "api": {
+      "invalidCredentials": "Неверный email или пароль",
+      "emailTaken": "Этот email уже зарегистрирован",
+      "badRequest": "Некорректный запрос",
+      "sessionExpired": "Сеанс истёк. Пожалуйста, войдите снова",
+      "unknown": "Произошла ошибка. Попробуйте позже"
+    },
+    "form": {
+      "email": "Введите корректный email",
+      "passwordRequired": "Введите пароль",
+      "passwordMin": "Пароль должен содержать минимум 6 символов",
+      "usernameRequired": "Введите имя пользователя",
+      "usernameMin": "Имя должно содержать минимум 2 символа"
+    }
   },
   "common": {
     "comingSoon": "Скоро",

@@ -15,13 +15,21 @@
     "login": "Sign in",
     "register": "Sign up",
     "logout": "Sign out",
-    "loginAsDev": "Sign in as dev",
     "loginTitle": "Sign in to onBoard",
-    "loginDescription": "Real auth lands in Phase 3. This is a dev stub.",
+    "loginDescription": "Enter your credentials to continue",
     "registerTitle": "Create account",
-    "registerDescription": "Registration will be added in Phase 3.",
+    "registerDescription": "Sign up to start preparing for interviews",
     "haveAccount": "Already have an account?",
-    "noAccount": "Don't have an account?"
+    "noAccount": "Don't have an account?",
+    "email": "Email",
+    "password": "Password",
+    "username": "Username",
+    "emailPlaceholder": "you@example.com",
+    "passwordPlaceholder": "••••••",
+    "usernamePlaceholder": "johndoe",
+    "submitLogin": "Sign in",
+    "submitRegister": "Create account",
+    "submitting": "Loading..."
   },
   "user": {
     "anonymous": "Guest"
@@ -37,7 +45,21 @@
     "reload": "Reload",
     "notFoundTitle": "Page not found",
     "notFoundDescription": "The URL is wrong or the page is not yet implemented.",
-    "goHome": "Go home"
+    "goHome": "Go home",
+    "api": {
+      "invalidCredentials": "Invalid email or password",
+      "emailTaken": "This email is already registered",
+      "badRequest": "Bad request",
+      "sessionExpired": "Session expired. Please sign in again",
+      "unknown": "An error occurred. Please try again"
+    },
+    "form": {
+      "email": "Enter a valid email address",
+      "passwordRequired": "Password is required",
+      "passwordMin": "Password must be at least 6 characters",
+      "usernameRequired": "Username is required",
+      "usernameMin": "Username must be at least 2 characters"
+    }
   },
   "common": {
     "comingSoon": "Coming soon",
