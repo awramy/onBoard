@@ -810,37 +810,62 @@ i18n ключи добавлены в `ru.json` и `en.json`:
 
 ---
 
-## 11. Фаза 5 — Sessions
+## 11. Фаза 5 — Sessions ✅
 
 **Цель**: страница `/sessions` со списком и переходом в чат/историю.
 
 ### 11.1 Страница
 
-- `<Tabs>` наверху: `Active (N)` / `All (N)` — счётчики из `useSessions()`.
+- `<PageHeader>` с кнопкой «Новая сессия» → открывает `<StartSessionDialog>`.
+- `<SessionsTabs>` наверху: `Active (N)` / `All (N)`.
+  - `N` = `total` из хука (серверная фильтрация `?status=planned,in_progress` / без фильтра).
+  - Счётчик отображается только для активного таба.
+  - Активный таб выделен светло-зелёным (`--accent`).
 - Под tabs — список `<SessionCard>`:
   - Название технологии + уровень (`<Badge>`).
   - `<SessionStatusBadge>`: planned/in_progress/completed/abandoned — разные цвета.
   - Прогресс `currentOrder / totalQuestions`.
-  - Дата (`formatDistanceToNow` из date-fns).
+  - Дата (`formatDistanceToNow` из `date-fns`), локаль из `i18n.language`.
   - Клик:
-    - `planned` → открыть диалог "Запустить сессию?" (`startSession()`) → `/sessions/:id/chat`.
+    - `planned` → открыть `<StartPlannedDialog>` (confirm) → `POST /sessions/:id/start` → `/sessions/:id/chat`.
     - `in_progress` → `/sessions/:id/chat`.
     - `completed | abandoned` → `/sessions/:id/history`.
 
-### 11.2 Фильтры (advanced, фаза 11)
+### 11.2 Компоненты
+
+| Файл | Описание |
+|------|----------|
+| `features/sessions/components/SessionCard.tsx` | Карточка сессии |
+| `features/sessions/components/SessionStatusBadge.tsx` | Бейдж статуса (4 варианта) |
+| `features/sessions/components/SessionsTabs.tsx` | Табы Active / All |
+| `features/sessions/components/SessionsList.tsx` | Список + skeleton + empty state + Load more |
+| `features/sessions/components/StartSessionDialog.tsx` | Диалог создания сессии (перенесён из dashboard) |
+| `features/sessions/components/StartPlannedDialog.tsx` | Confirm-диалог запуска planned-сессии |
+| `features/sessions/hooks/useSessionsList.ts` | Хук: фильтрация, пагинация take-based |
+| `features/sessions/hooks/useStartSession.ts` | Хук: создание + запуск сессии (перенесён из dashboard) |
+| `features/sessions/hooks/useStartPlannedSession.ts` | Хук: запуск existing planned-сессии |
+
+### 11.3 Backend-изменения
+
+- `GET /api/sessions` расширен: `?status=planned,in_progress` (строка через запятую).
+- Возвращает `{ items: SessionDto[], total: number }`.
+- Сервис: 2 запроса в `$transaction` — `findMany` + `count`.
+
+### 11.4 Пагинация
+
+- `take`-based: начальный `take=20`, кнопка «Загрузить ещё» увеличивает на 20.
+- Сброс `take` при смене таба через паттерн derived state (без `useEffect`).
+
+### Фильтры (advanced, фаза 11)
 
 - По технологии (select).
 - По статусу (multi-select).
 - По дате (date-range picker).
 
-### 11.3 Infinite scroll / пагинация
-
-- MVP: `useInfiniteQuery` с `take: 20`, `getNextPageParam`.
-
-### Критерий готовности
+### Критерий готовности ✅
 
 - Клик по активной сессии ведёт в чат; по завершённой — в историю.
-- Пустой список → empty state с CTA "Начать первую сессию" → тот же диалог, что и на Dashboard.
+- Пустой список → empty state с CTA «Начать первую сессию» → тот же `<StartSessionDialog>`, что и на Dashboard.
 
 ---
 
