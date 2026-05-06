@@ -713,58 +713,100 @@ export const registerSchema = z.object({
 
 ---
 
-## 10. Фаза 4 — Dashboard
+## 10. Фаза 4 — Dashboard ✅
 
 **Цель**: страница `/` с 5 виджетами-плитками.
 
-### 10.1 Widget: Continue / Start (hero)
+### 10.1 Backend: типизация API-эндпоинтов
 
-`features/dashboard/components/ContinueOrStartWidget.tsx`. Состояния:
-- Есть активная сессия (`status === 'in_progress'`, найдена через `useSessionsControllerFindAll({ status: 'in_progress', take: 1 })`) → большая карточка "Продолжить сессию" + progress bar (`currentOrder / totalQuestions`) + кнопка "Продолжить" → `/sessions/:id/chat`.
-- Нет активной → карточка "Начать новую сессию" + кнопка → открывает `<StartSessionDialog>`:
-  - select: Технология (`useTechnologiesControllerFindAll()`).
-  - select: Уровень (junior/middle/senior из `tech.levels`).
-  - slider: Количество вопросов (5–20, дефолт 10).
-  - select: Модель AI (`auto` / `gemini` / `openai`).
-  - submit → wrapper `useStartSession`: `useSessionsControllerCreate()` → `useSessionsControllerStart()` → navigate `/sessions/:id/chat`.
+Добавлены `@ApiOkResponse` / `@ApiCreatedResponse` декораторы и созданы DTO-классы для всех эндпоинтов Dashboard. Orval теперь генерирует строго типизированные DTO.
 
-### 10.2 Widget: Recent Questions
+Созданные DTO:
+- `backend/src/users/dto/user-me.dto.ts` — `UserMeDto { id, email, username, fullScore, league, createdAt }`
+- `backend/src/users/dto/user-leaderboard-item.dto.ts` — `UserLeaderboardItemDto { id, username, fullScore, league }`
+- `backend/src/users/dto/user-progress.dto.ts` — `UserProgressTechnologyDto`, `UserProgressLevelDto`, `UserProgressTopicDto`
+- `backend/src/sessions/dto/session.dto.ts` — `SessionDto` (список) с вложенным `SessionTechnologyLevelDto` / `SessionTechnologyDto`
+- `backend/src/sessions/dto/session-detail.dto.ts` — `SessionDetailDto extends SessionDto` + `SessionQuestionDto` + `SessionAnswerDto`
+- `backend/src/technologies/dto/technology.dto.ts` — `TechnologyDto` + `TechnologyLevelDto`
+- `backend/src/questions/dto/question-detail.dto.ts` — `QuestionDetailDto`
+- `backend/src/ai/dto/ai-providers.dto.ts` — `AiProvidersDto` + `AiProviderDto`
 
-- MVP: агрегируем на клиенте из последней `completed|in_progress` сессии через `useSessionsControllerFindOne(id)` (хранит `questions[].answers[]`).
-- Показываем 5 последних вопросов с `<ScoreBadge>`.
-- Backend-ext (фаза 10): `GET /api/users/me/recent-questions?limit=5` — после добавления на бэк перегенерируется `useUsersControllerGetRecentQuestions()`.
+Декорированы контроллеры: `users`, `sessions`, `technologies`, `questions`, `ai`.
 
-### 10.3 Widget: My League Top Players
+### 10.2 Frontend: slider + favorites
 
-- MVP: `useUsersControllerFindAll({ take: 50 })` → filter на клиенте по `user.league === me.league` → top 5.
-- Backend-ext: параметр `league` → сгенерируется `useUsersControllerFindAll({ league, limit: 5 })`.
-- UI: список с `<UserAvatar>` + username + `<ScoreBadge>`. Выделить текущего пользователя.
+- `@radix-ui/react-slider` установлен; обёртка `src/components/ui/slider.tsx` по шаблону shadcn.
+- `features/favorites/stores/favorites.store.ts` — Zustand + `persist` (ключ `onboard-favorites`). Хранит `ids: string[]`; actions: `add`, `remove`, `toggle`, `has`.
+- `features/favorites/hooks/useFavoriteIds.ts` — селектор `ids`.
+- `features/favorites/hooks/useToggleFavorite.ts` — `{ isFavorite, toggle }` для одного id.
 
-### 10.4 Widget: My Top Technologies
+### 10.3 Widget: Continue / Start (hero)
 
-- Источник: `useUsersControllerGetProgress()`.
-- Считаем суммарный score по технологии (sum по levels → sum по topics), сортируем desc, top 5.
-- UI: для каждой технологии — карточка с `<Progress>` и процентом от максимума.
+`features/dashboard/components/ContinueOrStartWidget.tsx`:
+- `useSessionsControllerFindAll({ take: 50 })` → клиентский фильтр `status === 'in_progress'`, берём первый.
+- Есть активная сессия → название технологии + уровень + `<Progress value={currentOrder/totalQuestions*100}/>` + кнопка «Продолжить» → `ROUTES.SESSION_CHAT(id)`.
+- Нет активной → кнопка «Начать новую сессию» → открывает `<StartSessionDialog>`.
 
-### 10.5 Widget: Favorite Questions
+`features/dashboard/components/StartSessionDialog.tsx` (shadcn `<Dialog>` + react-hook-form + zod):
+- Select: Технология (`useTechnologiesControllerFindAll()`).
+- Select: Уровень — опции из `selectedTechnology.levels`, сбрасывается при смене технологии.
+- Slider: Количество вопросов (5–20, шаг 1, default 10) с текущим значением в label.
+- Select: Модель AI — `auto` + провайдеры из `useAiControllerGetProviders()`; disabled если `!hasProviders`.
+- Submit → `useStartSession.start({ technologyLevelId, questionsCount, model })`.
+- Zod-схема: `features/dashboard/schemas.ts` (`startSessionSchema`), i18n-ключи в сообщениях.
 
-- MVP: `features/favorites/stores/favorites.store.ts` — zustand + persist, хранит `Set<questionId>`. При пустом списке — `<EmptyState>` с иконкой Star.
-- Для каждого id → `useQuestionsControllerFindOne(id)` параллельно через `useQueries` (вспомогательный `getQuestionsControllerFindOneQueryOptions(id)` экспортируется orval'ом).
-- Backend-ext: `GET /api/users/me/favorites` → `useUsersControllerGetFavorites()` (подключаем по флагу `env.enableFavoritesApi`).
-- Кнопка «звезда» рендерится в компонентах списков вопросов (`QuestionProgressRow`, `QuestionHistoryView`).
+`features/dashboard/hooks/useStartSession.ts`:
+- `mutateAsync(useSessionsControllerCreate)` → `mutateAsync(useSessionsControllerStart)` → `navigate(ROUTES.SESSION_CHAT(id))`.
+- Ошибки: `toast.error(getApiErrorMessage(err))`.
 
-### 10.6 Общие требования виджетов
+### 10.4 Widget: Recent Questions
 
-- Skeleton при loading (`<Skeleton className="h-24 w-full" />`).
-- Empty state (`<EmptyState ... />`).
-- Error state (`<Alert variant="destructive">` + retry).
-- Адаптив: `grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4`.
-- Prefetch on hover для ссылок-CTA.
+`features/dashboard/components/RecentQuestionsWidget.tsx`:
+- `useSessionsControllerFindAll({ take: 1 })` → берём последнюю сессию.
+- `useSessionsControllerFindOne(id, {}, { query: { enabled: !!id } })` → получаем `questions[]` с `answers[]`.
+- 5 последних вопросов по `order` desc, у каждого — `<ScoreBadge score={lastAnswer.score}>`.
+- Empty при отсутствии сессий; Error state при ошибке запроса.
 
-### Критерий готовности
+### 10.5 Widget: My League Top Players
 
-- Dashboard загружается < 1.5s на обычном 4G.
+`features/dashboard/components/LeagueTopWidget.tsx`:
+- `useUsersControllerGetProfile()` → `currentUser.league`.
+- `useUsersControllerFindAll({ take: 50 })` → filter `user.league === currentUser.league` → `slice(0, 5)`.
+- Список: `<UserAvatar>` + username + опциональный Badge «Вы» + `<ScoreBadge score={fullScore}>`.
+- Заголовок с `<LeagueBadge league={me.league}>`.
+
+### 10.6 Widget: My Top Technologies
+
+`features/dashboard/components/MyTopTechnologiesWidget.tsx`:
+- `useUsersControllerGetProgress()` → `UserProgressTechnologyDto[]`.
+- Клиентский расчёт: `totalScore = sum(level.topics[].score)` по каждой технологии, сортировка desc, top 5.
+- Строка: имя технологии + `<Progress value={score/maxScore*100}/>` + процент.
+
+### 10.7 Widget: Favorite Questions
+
+`features/dashboard/components/FavoritesWidget.tsx`:
+- `useFavoriteIds()` → массив id.
+- `useQueries` с `getQuestionsControllerFindOneQueryOptions(id)` для каждого id.
+- Каждая строка: `questionText` (line-clamp-1) + `difficulty` + кнопка-крестик (`useToggleFavorite`).
+- Empty state: иконка Star + текст.
+- Backend-ext: `GET /api/users/me/favorites` → `useUsersControllerGetFavorites()` (подключаем по флагу `env.enableFavoritesApi`, пока `false`). Кнопка «звезда» — в компонентах списков вопросов в фазах 5–7.
+
+### 10.8 DashboardPage + i18n
+
+`pages/DashboardPage.tsx` — `<PageHeader>` + `<ContinueOrStartWidget>` на полную ширину + `grid grid-cols-1 md:grid-cols-2 gap-4` с четырьмя виджетами.
+
+i18n ключи добавлены в `ru.json` и `en.json`:
+- `dashboard.{title,description,continue.*,start.*,dialog.*,recentQuestions.*,leagueTop.*,topTechnologies.*,favorites.*}`
+- `errors.form.{technologyRequired,levelRequired,modelRequired,questionsCountRange}`
+- `league.{bronze,silver,gold,platinum}`
+
+### Критерий готовности ✅
+
+- `pnpm run lint` — 0 ошибок.
+- `pnpm run build` — успешная сборка без TS-ошибок.
 - Все 5 виджетов рендерятся без ошибок при пустом state (новый пользователь).
+- Активная сессия → виджет Continue показывает progress bar.
+- `<StartSessionDialog>` — все поля валидируются, submit запускает сессию и редиректит в чат.
 
 ---
 
