@@ -58,12 +58,69 @@
       "passwordRequired": "Введите пароль",
       "passwordMin": "Пароль должен содержать минимум 6 символов",
       "usernameRequired": "Введите имя пользователя",
-      "usernameMin": "Имя должно содержать минимум 2 символа"
+      "usernameMin": "Имя должно содержать минимум 2 символа",
+      "technologyRequired": "Выберите технологию",
+      "levelRequired": "Выберите уровень",
+      "modelRequired": "Выберите AI-модель",
+      "questionsCountRange": "Количество вопросов от 5 до 20"
     }
   },
   "common": {
     "comingSoon": "Скоро",
     "wipDescription": "Раздел будет реализован в одной из следующих фаз.",
     "open": "Открыть"
+  },
+  "league": {
+    "bronze": "Bronze",
+    "silver": "Silver",
+    "gold": "Gold",
+    "platinum": "Platinum"
+  },
+  "dashboard": {
+    "title": "Главная",
+    "description": "Обзор вашего прогресса и быстрый старт",
+    "continue": {
+      "title": "Продолжить сессию",
+      "subtitle": "У вас есть незавершённая сессия",
+      "button": "Продолжить",
+      "progress": "Прогресс сессии"
+    },
+    "start": {
+      "title": "Начать тренировку",
+      "subtitle": "Выберите технологию и начните новую сессию",
+      "button": "Начать новую сессию"
+    },
+    "dialog": {
+      "title": "Новая сессия",
+      "description": "Настройте параметры интервью",
+      "technology": "Технология",
+      "technologyPlaceholder": "Выберите технологию",
+      "level": "Уровень",
+      "levelPlaceholder": "Выберите уровень",
+      "questionsCount": "Количество вопросов",
+      "model": "AI-модель",
+      "modelPlaceholder": "Выберите модель",
+      "modelAuto": "Авто",
+      "submit": "Начать",
+      "submitting": "Запуск...",
+      "noProviders": "Нет доступных AI-моделей"
+    },
+    "recentQuestions": {
+      "title": "Последние вопросы",
+      "empty": "Сессий пока нет. Начните первую тренировку!"
+    },
+    "leagueTop": {
+      "title": "Топ лиги",
+      "you": "Вы",
+      "empty": "В вашей лиге пока нет других игроков"
+    },
+    "topTechnologies": {
+      "title": "Мои технологии",
+      "empty": "Пройдите первую сессию, чтобы увидеть прогресс"
+    },
+    "favorites": {
+      "title": "Избранные вопросы",
+      "empty": "Нет избранных вопросов"
+    }
   }
 }

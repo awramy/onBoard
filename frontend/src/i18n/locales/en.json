@@ -58,12 +58,69 @@
       "passwordRequired": "Password is required",
       "passwordMin": "Password must be at least 6 characters",
       "usernameRequired": "Username is required",
-      "usernameMin": "Username must be at least 2 characters"
+      "usernameMin": "Username must be at least 2 characters",
+      "technologyRequired": "Please select a technology",
+      "levelRequired": "Please select a level",
+      "modelRequired": "Please select an AI model",
+      "questionsCountRange": "Questions count must be between 5 and 20"
     }
   },
   "common": {
     "comingSoon": "Coming soon",
     "wipDescription": "This section will land in one of the upcoming phases.",
     "open": "Open"
+  },
+  "league": {
+    "bronze": "Bronze",
+    "silver": "Silver",
+    "gold": "Gold",
+    "platinum": "Platinum"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "description": "Your progress overview and quick start",
+    "continue": {
+      "title": "Continue session",
+      "subtitle": "You have an active session",
+      "button": "Continue",
+      "progress": "Session progress"
+    },
+    "start": {
+      "title": "Start training",
+      "subtitle": "Pick a technology and start a new session",
+      "button": "Start new session"
+    },
+    "dialog": {
+      "title": "New session",
+      "description": "Configure your interview settings",
+      "technology": "Technology",
+      "technologyPlaceholder": "Select technology",
+      "level": "Level",
+      "levelPlaceholder": "Select level",
+      "questionsCount": "Questions count",
+      "model": "AI model",
+      "modelPlaceholder": "Select model",
+      "modelAuto": "Auto",
+      "submit": "Start",
+      "submitting": "Starting...",
+      "noProviders": "No AI models available"
+    },
+    "recentQuestions": {
+      "title": "Recent questions",
+      "empty": "No sessions yet. Start your first training!"
+    },
+    "leagueTop": {
+      "title": "League top",
+      "you": "You",
+      "empty": "No other players in your league yet"
+    },
+    "topTechnologies": {
+      "title": "My technologies",
+      "empty": "Complete your first session to see progress"
+    },
+    "favorites": {
+      "title": "Favorite questions",
+      "empty": "No favorite questions"
+    }
   }
 }

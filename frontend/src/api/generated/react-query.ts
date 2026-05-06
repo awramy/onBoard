@@ -22,21 +22,29 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  AiProvidersDto,
   AnswerQuestionDto,
   AuthResponseDto,
   CreateSessionDto,
   LoginDto,
+  QuestionDetailDto,
   QuestionsControllerFindAllParams,
   QuestionsControllerFindOneParams,
   RegisterDto,
+  SessionDetailDto,
+  SessionDto,
   SessionsControllerFindAllParams,
   SessionsControllerFindOneParams,
   SessionsControllerStartParams,
   TechnologiesControllerFindAllParams,
   TechnologiesControllerFindOneParams,
+  TechnologyDto,
   TestAiModelDto,
   TopicsControllerFindAllParams,
   TopicsControllerFindOneParams,
+  UserLeaderboardItemDto,
+  UserMeDto,
+  UserProgressTechnologyDto,
   UsersControllerFindAllParams,
   UsersControllerGetProgressParams,
   UsersControllerGetQuestionAnswerHistoryParams,
@@ -372,7 +380,7 @@ export const technologiesControllerFindAll = (
   params?: TechnologiesControllerFindAllParams,
   signal?: AbortSignal,
 ) => {
-  return customReactQueryAxios<void>({
+  return customReactQueryAxios<TechnologyDto[]>({
     url: `/api/technologies`,
     method: "GET",
     params,
@@ -1207,7 +1215,7 @@ export const questionsControllerFindOne = (
   params?: QuestionsControllerFindOneParams,
   signal?: AbortSignal,
 ) => {
-  return customReactQueryAxios<void>({
+  return customReactQueryAxios<QuestionDetailDto>({
     url: `/api/questions/${id}`,
     method: "GET",
     params,
@@ -1378,7 +1386,7 @@ export function useQuestionsControllerFindOne<
  * @summary Get current user profile
  */
 export const usersControllerGetProfile = (signal?: AbortSignal) => {
-  return customReactQueryAxios<void>({
+  return customReactQueryAxios<UserMeDto>({
     url: `/api/users/me`,
     method: "GET",
     signal,
@@ -1527,7 +1535,7 @@ export const usersControllerGetProgress = (
   params?: UsersControllerGetProgressParams,
   signal?: AbortSignal,
 ) => {
-  return customReactQueryAxios<void>({
+  return customReactQueryAxios<UserProgressTechnologyDto[]>({
     url: `/api/users/me/progress`,
     method: "GET",
     params,
@@ -2202,7 +2210,7 @@ export const usersControllerFindAll = (
   params?: UsersControllerFindAllParams,
   signal?: AbortSignal,
 ) => {
-  return customReactQueryAxios<void>({
+  return customReactQueryAxios<UserLeaderboardItemDto[]>({
     url: `/api/users`,
     method: "GET",
     params,
@@ -2358,7 +2366,7 @@ export function useUsersControllerFindAll<
  * @summary List registered AI providers, models, and routing aliases
  */
 export const aiControllerGetProviders = (signal?: AbortSignal) => {
-  return customReactQueryAxios<void>({
+  return customReactQueryAxios<AiProvidersDto>({
     url: `/api/ai/providers`,
     method: "GET",
     signal,
@@ -2740,7 +2748,7 @@ export const sessionsControllerCreate = (
   createSessionDto: BodyType<CreateSessionDto>,
   signal?: AbortSignal,
 ) => {
-  return customReactQueryAxios<void>({
+  return customReactQueryAxios<SessionDto>({
     url: `/api/sessions`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -2827,7 +2835,7 @@ export const sessionsControllerFindAll = (
   params?: SessionsControllerFindAllParams,
   signal?: AbortSignal,
 ) => {
-  return customReactQueryAxios<void>({
+  return customReactQueryAxios<SessionDto[]>({
     url: `/api/sessions`,
     method: "GET",
     params,
@@ -2990,7 +2998,7 @@ export const sessionsControllerFindOne = (
   params?: SessionsControllerFindOneParams,
   signal?: AbortSignal,
 ) => {
-  return customReactQueryAxios<void>({
+  return customReactQueryAxios<SessionDetailDto>({
     url: `/api/sessions/${id}`,
     method: "GET",
     params,
@@ -3165,7 +3173,7 @@ export const sessionsControllerStart = (
   params?: SessionsControllerStartParams,
   signal?: AbortSignal,
 ) => {
-  return customReactQueryAxios<void>({
+  return customReactQueryAxios<SessionDto>({
     url: `/api/sessions/${id}/start`,
     method: "POST",
     params,
