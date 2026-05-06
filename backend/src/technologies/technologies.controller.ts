@@ -3,9 +3,11 @@ import {
   ApiTags,
   ApiBearerAuth,
   ApiOperation,
+  ApiOkResponse,
   ApiQuery,
 } from '@nestjs/swagger';
 import { TechnologiesService } from './technologies.service';
+import { TechnologyDto } from './dto/technology.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PaginationDto } from '../common/dto/pagination.dto';
 
@@ -18,6 +20,7 @@ export class TechnologiesController {
 
   @Get()
   @ApiOperation({ summary: 'Get all technologies' })
+  @ApiOkResponse({ type: [TechnologyDto] })
   @ApiQuery({ name: 'lang', required: false, example: 'en' })
   findAll(
     @Query('lang') lang: string = 'en',

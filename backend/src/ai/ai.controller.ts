@@ -1,8 +1,9 @@
 import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags, ApiBody } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiOkResponse, ApiTags, ApiBody } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { AiService } from './ai.service';
 import { TestAiModelDto } from './dto/test-ai-model.dto';
+import { AiProvidersDto } from './dto/ai-providers.dto';
 
 @ApiTags('ai')
 @ApiBearerAuth()
@@ -15,6 +16,7 @@ export class AiController {
   @ApiOperation({
     summary: 'List registered AI providers, models, and routing aliases',
   })
+  @ApiOkResponse({ type: AiProvidersDto })
   getProviders() {
     return this.aiService.getProviderHealthSummary();
   }

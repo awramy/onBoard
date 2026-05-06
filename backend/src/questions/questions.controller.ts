@@ -10,9 +10,11 @@ import {
   ApiTags,
   ApiBearerAuth,
   ApiOperation,
+  ApiOkResponse,
   ApiQuery,
 } from '@nestjs/swagger';
 import { QuestionsService } from './questions.service';
+import { QuestionDetailDto } from './dto/question-detail.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PaginationDto } from '../common/dto/pagination.dto';
 
@@ -42,6 +44,7 @@ export class QuestionsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get question by ID with explanation' })
+  @ApiOkResponse({ type: QuestionDetailDto })
   @ApiQuery({ name: 'lang', required: false, example: 'en' })
   findOne(@Param('id') id: string, @Query('lang') lang: string = 'en') {
     return this.questionsService.findOne(id, lang);

@@ -10,6 +10,7 @@ import {
   ApiTags,
   ApiBearerAuth,
   ApiOperation,
+  ApiOkResponse,
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
@@ -17,6 +18,9 @@ import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { PaginationDto } from '../common/dto/pagination.dto';
+import { UserMeDto } from './dto/user-me.dto';
+import { UserLeaderboardItemDto } from './dto/user-leaderboard-item.dto';
+import { UserProgressTechnologyDto } from './dto/user-progress.dto';
 
 @ApiTags('users')
 @ApiBearerAuth()
@@ -27,12 +31,14 @@ export class UsersController {
 
   @Get('me')
   @ApiOperation({ summary: 'Get current user profile' })
+  @ApiOkResponse({ type: UserMeDto })
   getProfile(@CurrentUser() user: { id: string }) {
     return this.usersService.getProfile(user.id);
   }
 
   @Get('me/progress')
   @ApiOperation({ summary: 'Get aggregated progress by technologies → topics' })
+  @ApiOkResponse({ type: [UserProgressTechnologyDto] })
   @ApiQuery({ name: 'lang', required: false, example: 'en' })
   getProgress(
     @CurrentUser() user: { id: string },
@@ -93,6 +99,7 @@ export class UsersController {
 
   @Get()
   @ApiOperation({ summary: 'Get all users (leaderboard)' })
+  @ApiOkResponse({ type: [UserLeaderboardItemDto] })
   findAll(@Query() pagination: PaginationDto) {
     return this.usersService.findAll(
       pagination.skip ?? 0,

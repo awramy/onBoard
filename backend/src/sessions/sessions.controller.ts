@@ -12,9 +12,13 @@ import {
   ApiTags,
   ApiBearerAuth,
   ApiOperation,
+  ApiOkResponse,
+  ApiCreatedResponse,
   ApiQuery,
 } from '@nestjs/swagger';
 import { SessionsService } from './sessions.service';
+import { SessionDto } from './dto/session.dto';
+import { SessionDetailDto } from './dto/session-detail.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { CreateSessionDto } from './dto/create-session.dto';
@@ -30,6 +34,7 @@ export class SessionsController {
 
   @Post()
   @ApiOperation({ summary: 'Create a new interview session' })
+  @ApiCreatedResponse({ type: SessionDto })
   create(@CurrentUser() user: { id: string }, @Body() dto: CreateSessionDto) {
     return this.sessionsService.create(
       user.id,
@@ -40,6 +45,7 @@ export class SessionsController {
 
   @Get()
   @ApiOperation({ summary: 'Get all sessions for current user' })
+  @ApiOkResponse({ type: [SessionDto] })
   @ApiQuery({ name: 'lang', required: false, example: 'en' })
   findAll(
     @CurrentUser() user: { id: string },
@@ -56,6 +62,7 @@ export class SessionsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get session details' })
+  @ApiOkResponse({ type: SessionDetailDto })
   @ApiQuery({ name: 'lang', required: false, example: 'en' })
   findOne(
     @CurrentUser() user: { id: string },
@@ -67,6 +74,7 @@ export class SessionsController {
 
   @Post(':id/start')
   @ApiOperation({ summary: 'Start a planned session — generates questions' })
+  @ApiOkResponse({ type: SessionDto })
   @ApiQuery({ name: 'lang', required: false, example: 'en' })
   start(
     @CurrentUser() user: { id: string },
