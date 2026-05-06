@@ -17,13 +17,13 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { SessionsService } from './sessions.service';
-import { SessionDto } from './dto/session.dto';
+import { SessionDto, SessionsListDto } from './dto/session.dto';
 import { SessionDetailDto } from './dto/session-detail.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { AnswerQuestionDto } from './dto/answer-question.dto';
-import { PaginationDto } from '../common/dto/pagination.dto';
+import { FindSessionsQueryDto } from './dto/find-sessions-query.dto';
 
 @ApiTags('sessions')
 @ApiBearerAuth()
@@ -45,19 +45,18 @@ export class SessionsController {
 
   @Get()
   @ApiOperation({ summary: 'Get all sessions for current user' })
-  @ApiOkResponse({ type: [SessionDto] })
+  @ApiOkResponse({ type: SessionsListDto })
   @ApiQuery({ name: 'lang', required: false, example: 'en' })
   findAll(
     @CurrentUser() user: { id: string },
     @Query('lang') lang: string = 'en',
-    @Query() pagination: PaginationDto,
+    @Query() query: FindSessionsQueryDto,
   ) {
-    return this.sessionsService.findAll(
-      user.id,
-      lang,
-      pagination.skip ?? 0,
-      pagination.take ?? 50,
-    );
+    return this.sessionsService.findAll(user.id, lang, {
+      skip: query.skip ?? 0,
+      take: query.take ?? 20,
+      status: query.status,
+    });
   }
 
   @Get(':id')

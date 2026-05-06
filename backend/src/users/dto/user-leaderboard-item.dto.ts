@@ -10,6 +10,9 @@ export class UserLeaderboardItemDto {
   @ApiProperty({ example: 0 })
   fullScore!: number;
 
-  @ApiProperty({ example: 'bronze', enum: ['bronze', 'silver', 'gold', 'platinum'] })
+  @ApiProperty({
+    example: 'bronze',
+    enum: ['bronze', 'silver', 'gold', 'platinum'],
+  })
   league!: string;
 }

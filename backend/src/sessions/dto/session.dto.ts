@@ -41,7 +41,10 @@ export class SessionDto {
   @ApiProperty()
   technologyLevelId!: string;
 
-  @ApiProperty({ example: 'planned', enum: ['planned', 'in_progress', 'completed', 'abandoned'] })
+  @ApiProperty({
+    example: 'planned',
+    enum: ['planned', 'in_progress', 'completed', 'abandoned'],
+  })
   status!: string;
 
   @ApiProperty({ nullable: true, type: Number })
@@ -61,4 +64,12 @@ export class SessionDto {
 
   @ApiProperty({ type: SessionTechnologyLevelDto })
   technologyLevel!: SessionTechnologyLevelDto;
+}
+
+export class SessionsListDto {
+  @ApiProperty({ type: [SessionDto] })
+  items!: SessionDto[];
+
+  @ApiProperty()
+  total!: number;
 }

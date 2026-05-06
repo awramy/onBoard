@@ -122,5 +122,33 @@
       "title": "Favorite questions",
       "empty": "No favorite questions"
     }
+  },
+  "sessions": {
+    "title": "Sessions",
+    "description": "Your interview preparation sessions",
+    "newSession": "New session",
+    "loadMore": "Load more",
+    "tabs": {
+      "active": "Active",
+      "all": "All"
+    },
+    "status": {
+      "planned": "Planned",
+      "in_progress": "In progress",
+      "completed": "Completed",
+      "abandoned": "Abandoned"
+    },
+    "empty": {
+      "title": "No sessions yet",
+      "description": "Start your first session to begin training.",
+      "cta": "Start first session"
+    },
+    "confirmStart": {
+      "title": "Start session?",
+      "description": "{{tech}} · {{level}} · {{count}} questions",
+      "confirm": "Start",
+      "confirming": "Starting...",
+      "cancel": "Cancel"
+    }
   }
 }

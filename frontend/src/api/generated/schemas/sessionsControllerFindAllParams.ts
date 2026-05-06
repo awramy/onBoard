@@ -17,4 +17,8 @@ export type SessionsControllerFindAllParams = {
    * @maximum 100
    */
   take?: number;
+  /**
+   * Фильтр по статусу. Передаётся через запятую: ?status=planned,in_progress
+   */
+  status?: string;
 };

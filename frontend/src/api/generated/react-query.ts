@@ -36,6 +36,7 @@ import type {
   SessionsControllerFindAllParams,
   SessionsControllerFindOneParams,
   SessionsControllerStartParams,
+  SessionsListDto,
   TechnologiesControllerFindAllParams,
   TechnologiesControllerFindOneParams,
   TechnologyDto,
@@ -2835,7 +2836,7 @@ export const sessionsControllerFindAll = (
   params?: SessionsControllerFindAllParams,
   signal?: AbortSignal,
 ) => {
-  return customReactQueryAxios<SessionDto[]>({
+  return customReactQueryAxios<SessionsListDto>({
     url: `/api/sessions`,
     method: "GET",
     params,

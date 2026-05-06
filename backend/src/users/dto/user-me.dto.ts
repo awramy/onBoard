@@ -13,7 +13,10 @@ export class UserMeDto {
   @ApiProperty({ example: 0 })
   fullScore!: number;
 
-  @ApiProperty({ example: 'bronze', enum: ['bronze', 'silver', 'gold', 'platinum'] })
+  @ApiProperty({
+    example: 'bronze',
+    enum: ['bronze', 'silver', 'gold', 'platinum'],
+  })
   league!: string;
 
   @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })

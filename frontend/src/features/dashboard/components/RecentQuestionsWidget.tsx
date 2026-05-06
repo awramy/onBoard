@@ -16,7 +16,7 @@ export function RecentQuestionsWidget() {
   const { data: sessions, isLoading: sessionsLoading, isError: sessionsError } =
     useSessionsControllerFindAll({ take: 1 });
 
-  const latestSession = sessions?.[0];
+  const latestSession = sessions?.items[0];
 
   const { data: sessionDetail, isLoading: detailLoading, isError: detailError } =
     useSessionsControllerFindOne(

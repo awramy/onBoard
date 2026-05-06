@@ -29,8 +29,8 @@ import {
   useTechnologiesControllerFindAll,
   useAiControllerGetProviders,
 } from '@/api/generated/react-query';
-import { startSessionSchema, type StartSessionFormValues } from '../schemas';
-import { useStartSession } from '../hooks/useStartSession';
+import { startSessionSchema, type StartSessionFormValues } from '@/features/sessions/schemas';
+import { useStartSession } from '@/features/sessions/hooks/useStartSession';
 
 type StartSessionDialogProps = {
   open: boolean;

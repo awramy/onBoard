@@ -26,6 +26,7 @@ export * from "./sessionQuestionDto";
 export * from "./sessionsControllerFindAllParams";
 export * from "./sessionsControllerFindOneParams";
 export * from "./sessionsControllerStartParams";
+export * from "./sessionsListDto";
 export * from "./sessionTechnologyDto";
 export * from "./sessionTechnologyLevelDto";
 export * from "./sessionTechnologyLevelDtoDifficulty";

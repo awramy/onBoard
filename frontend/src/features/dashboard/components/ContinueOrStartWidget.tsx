@@ -8,7 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { SkeletonList } from '@/components/common/SkeletonList';
 import { useSessionsControllerFindAll } from '@/api/generated/react-query';
 import { ROUTES } from '@/routes/routes';
-import { StartSessionDialog } from './StartSessionDialog';
+import { StartSessionDialog } from '@/features/sessions/components/StartSessionDialog';
 
 export function ContinueOrStartWidget() {
   const { t } = useTranslation();
@@ -17,7 +17,7 @@ export function ContinueOrStartWidget() {
 
   const { data, isLoading } = useSessionsControllerFindAll({ take: 50 });
 
-  const activeSession = data?.find((s) => s.status === 'in_progress');
+  const activeSession = data?.items.find((s) => s.status === 'in_progress');
 
   const progress =
     activeSession && activeSession.totalQuestions

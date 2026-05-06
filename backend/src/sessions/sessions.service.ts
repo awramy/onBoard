@@ -39,16 +39,36 @@ export class SessionsService {
     });
   }
 
-  // AI-NOTE: Список всех сессий пользователя с локализацией описания технологии
-  async findAll(userId: string, locale: string, skip = 0, take = 50) {
-    const sessions = await this.prisma.interviewSession.findMany({
-      where: { userId },
-      include: { technologyLevel: { include: { technology: true } } },
-      orderBy: { createdAt: 'desc' },
-      skip,
-      take,
-    });
-    return sessions.map((s) => ({
+  async findAll(
+    userId: string,
+    locale: string,
+    opts: { skip?: number; take?: number; status?: string } = {},
+  ) {
+    const { skip = 0, take = 50, status } = opts;
+    const statusList = status
+      ? status
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : undefined;
+    const statusFilter = statusList?.length
+      ? { status: { in: statusList } }
+      : {};
+
+    const [sessions, total] = await this.prisma.$transaction([
+      this.prisma.interviewSession.findMany({
+        where: { userId, ...statusFilter },
+        include: { technologyLevel: { include: { technology: true } } },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take,
+      }),
+      this.prisma.interviewSession.count({
+        where: { userId, ...statusFilter },
+      }),
+    ]);
+
+    const items = sessions.map((s) => ({
       ...s,
       technologyLevel: {
         ...s.technologyLevel,
@@ -61,6 +81,8 @@ export class SessionsService {
         },
       },
     }));
+
+    return { items, total };
   }
 
   // AI-NOTE: Детали сессии с вопросами и ответами, проверяет принадлежность пользователю
