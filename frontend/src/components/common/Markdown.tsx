@@ -6,6 +6,7 @@ type MarkdownProps = {
   className?: string;
 };
 
+/* Компонент-обертка для md текста (использует библиотечный ReactMarkdown) */
 export function Markdown({ children, className }: MarkdownProps) {
   return (
     <div

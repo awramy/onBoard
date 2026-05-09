@@ -7,14 +7,16 @@ import { HistoryHeader } from '@/features/session-chat/components/HistoryHeader'
 
 export default function SessionHistoryPage() {
   const { id } = useParams<{ id: string }>();
+
+  // messages строятся из session.questions[].answers[] через hydrateFromSession
   const { runtime, sessionData, isLoading } = useReadOnlyChatRuntime(id!);
 
   if (!id) return <Navigate to={ROUTES.SESSIONS} replace />;
 
+  // Перекидываем на правильную страницу если статус не тот
   if (sessionData?.status === 'in_progress') {
     return <Navigate to={ROUTES.SESSION_CHAT(id)} replace />;
   }
-
   if (sessionData?.status === 'planned') {
     return <Navigate to={ROUTES.SESSIONS} replace />;
   }
@@ -29,6 +31,7 @@ export default function SessionHistoryPage() {
     );
   }
 
+  // Сессия была создана, но start так и не вызвали — вопросов нет
   if (sessionData && sessionData.questions.length === 0) {
     return (
       <div className="flex flex-col h-[calc(100vh-var(--app-header-h,64px))]">
@@ -45,6 +48,7 @@ export default function SessionHistoryPage() {
     <div className="flex flex-col h-[calc(100vh-var(--app-header-h,64px))]">
       {sessionData && <HistoryHeader session={sessionData} />}
       <div className="flex-1 min-h-0">
+        {/* mode="history" — composer не рендерится, runtime isDisabled */}
         <ChatThread
           runtime={runtime}
           mode="history"

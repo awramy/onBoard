@@ -17,6 +17,7 @@ export default function SessionChatPage() {
   const { id } = useParams<{ id: string }>();
   const [abandonOpen, setAbandonOpen] = useState(false);
 
+  // useChatRuntime управляет состоянием треда, мутациями и assistant-ui runtime
   const {
     runtime,
     sessionData,
@@ -29,10 +30,12 @@ export default function SessionChatPage() {
     isRunning,
   } = useChatRuntime(id!);
 
+  // abandon вынесен отдельно — нужен только для подтверждённого действия из диалога
   const abandon = useAbandonSession();
 
   if (!id) return <Navigate to={ROUTES.SESSIONS} replace />;
 
+  // Завершённые сессии смотрим в истории
   if (sessionData?.status === 'completed' || sessionData?.status === 'abandoned') {
     return <Navigate to={ROUTES.SESSION_HISTORY(id)} replace />;
   }
@@ -47,6 +50,7 @@ export default function SessionChatPage() {
     );
   }
 
+  // planned — не стартуем автоматически, показываем карточку с кнопкой
   if (sessionData?.status === 'planned') {
     return <PlannedSessionPlaceholder sessionId={id} />;
   }
@@ -62,7 +66,7 @@ export default function SessionChatPage() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-var(--app-header-h,64px))]">
-      {/* Mobile FAB for control panel */}
+      {/* Mobile: FAB открывает панель управления в Sheet */}
       <div className="md:hidden fixed bottom-4 right-4 z-50">
         <Sheet>
           <SheetTrigger
@@ -79,7 +83,6 @@ export default function SessionChatPage() {
       </div>
 
       <div className="flex flex-1 min-h-0">
-        {/* Chat area */}
         <div className="flex-1 min-w-0">
           <ChatThread
             runtime={runtime}
@@ -92,12 +95,13 @@ export default function SessionChatPage() {
           />
         </div>
 
-        {/* Desktop sidebar */}
+        {/* Desktop: постоянный сайдбар */}
         <div className="hidden md:flex md:w-80 border-l flex-col">
           {controlPanel}
         </div>
       </div>
 
+      {/* SummaryDialog появляется при isFinished без навигации — пользователь сам выбирает что делать */}
       {summaryResult && (
         <SummaryDialog
           open={true}

@@ -869,53 +869,81 @@ i18n ключи добавлены в `ru.json` и `en.json`:
 
 ---
 
-## 12. Фаза 6 — Session Chat (assistant-ui)
+## 12. Фаза 6 — Session Chat ✅
 
-**Цель**: полноценный чат-интерфейс для прохождения сессии.
+**Цель**: полноценный чат-интерфейс для прохождения сессии и read-only просмотр истории.
 
-### 12.1 Почему assistant-ui
+### 12.1 Предусловие: Backend DTO
 
-- Нативная поддержка **shadcn-темы** (компоненты стилизуются нашими CSS-переменными).
-- Гибкий runtime API (`useExternalStoreRuntime`) — легко замапить на наши REST-ручки.
-- Accessibility из коробки, auto-scroll, markdown rendering, code-highlighting.
-- Активная разработка (2025-2026).
+До генерации клиента потребовалось добавить `@ApiOkResponse` на 6 эндпоинтов сессий — без этого orval генерировал `void`. Созданы DTO:
+`CurrentQuestionDto`, `AnswerResultDto` (+ `AnswerNextQuestionDto`), `SkipResultDto`, `FinishResultDto`, `AbandonResultDto`, `StartResultDto`.
 
-### 12.2 Установка
+### 12.2 Зависимости
 
 ```bash
-pnpm add @assistant-ui/react @assistant-ui/react-ui @assistant-ui/styles @assistant-ui/react-markdown
+# уже установлено
+@assistant-ui/react ^0.12     # runtime + примитивы
+react-markdown                 # рендер markdown в feedback
+date-fns                       # relative dates в SessionControlPanel
 ```
 
-Подключить стили:
-```css
-/* src/styles/index.css */
-@import "@assistant-ui/styles/index.css";
-@import "@assistant-ui/styles/markdown.css";
-```
+> `@assistant-ui/styles/index.css` **не подключаем** — конфликтует с Tailwind-токенами. Используем только примитивы (`useExternalStoreRuntime`, `ThreadPrimitive`, `MessagePrimitive`), UI полностью кастомный.
 
-### 12.3 Файлы фичи
+### 12.3 Структура фичи
 
 ```
 src/features/session-chat/
-  components/
-    ChatThread.tsx             # <Thread runtime={...}/>
-    ChatAssistantMessage.tsx   # custom renderer: question или evaluation
-    ChatUserMessage.tsx
-    ChatEvaluationMessage.tsx  # score badge + feedback + recommendations
-    SessionControlPanel.tsx    # прогресс, skip/abandon/finish
+  README.md                    # описание связки, хуков, компонентов
+  types.ts                     # ChatMeta, ChatMessageKind
+  context.ts                   # ChatCallbacksContext (onSend/onSkip/onRetry/isRunning)
+  lib/
+    messageBuilders.ts         # чистые функции → ThreadMessageLike
   hooks/
-    useChatRuntime.ts          # ВСЯ логика чата: биндинг assistant-ui runtime к orval-хукам
-    useAnswerQuestion.ts       # wrapper над useSessionsControllerAnswer (invalidate + toast)
-    useSkipQuestion.ts         # wrapper над useSessionsControllerSkip
+    useChatRuntime.ts          # live-режим: state + мутации + runtime
+    useReadOnlyChatRuntime.ts  # history-режим: messages из hydrateFromSession
+    useAnswerQuestion.ts       # POST /answer + invalidate
+    useSkipQuestion.ts         # POST /skip  + invalidate
+    useFinishSession.ts        # POST /finish + invalidate профиля
+    useAbandonSession.ts       # POST /abandon + toast + navigate
+    useDraftAnswer.ts          # localStorage черновик ответа
+  components/
+    ChatThread.tsx             # AssistantRuntimeProvider + ThreadPrimitive
+    ChatAssistantMessage.tsx   # диспатчер по kind → пузырь
+    ChatUserMessage.tsx        # реплика пользователя (справа)
+    QuestionBubble.tsx         # текст + badges (order/difficulty/isDivide)
+    EvaluationBubble.tsx       # ScoreBadge + Markdown + Accordion рекомендаций
+    ErrorBubble.tsx            # сообщение об ошибке + кнопка Retry
+    ChatComposer.tsx           # textarea + Send + Skip (Cmd+Enter = send)
+    TypingIndicator.tsx        # 3 точки + текст «AI оценивает...»
+    SessionControlPanel.tsx    # прогресс-бар + QuestionsChecklist + кнопки
+    QuestionsChecklist.tsx     # статус каждого вопроса (answered/skipped/current/pending)
+    SummaryDialog.tsx          # итог сессии при isFinished
+    ConfirmAbandonDialog.tsx   # подтверждение abandon
+    HistoryHeader.tsx          # шапка страницы истории
+    PlannedSessionPlaceholder.tsx  # карточка «старт» для planned-сессий
 
 src/pages/
-  SessionChatPage.tsx          # тонкий: <ChatThread/> + <SessionControlPanel/>
-  SessionHistoryPage.tsx       # read-only <ChatThread/>
+  SessionChatPage.tsx          # live: useChatRuntime + ChatThread + SessionControlPanel
+  SessionHistoryPage.tsx       # history: useReadOnlyChatRuntime + ChatThread
+src/components/common/
+  Markdown.tsx                 # wrapper над react-markdown с Tailwind prose
 ```
 
-> Для просмотра сессии и текущего вопроса **не делаем своих хуков** — зовём `useSessionsControllerFindOne(sessionId)` и `useSessionsControllerGetCurrentQuestion(sessionId)` напрямую из компонентов / из `useChatRuntime`.
+### 12.4 Ключевые решения
 
-### 12.4 Lifecycle страницы
+**Управление сообщениями вне runtime.** `messages: ThreadMessageLike[]` хранятся в локальном `useState`. `useExternalStoreRuntime` получает их снаружи — это позволяет вручную управлять каждым push (user, evaluation, error, skip). Auto-scroll и typing-indicator работают через `ThreadPrimitive.Viewport` и `ThreadPrimitive.If running`.
+
+**Гидрация один раз.** При маунте `useChatRuntime` вызывает `hydrateFromSession` и фиксирует флаг `useRef(false)`. Повторные ре-фетчи `findOne` тред не перезатирают.
+
+**Тип сообщения через `metadata.custom`.** Каждое ассистент-сообщение несёт `ChatMeta` в `metadata.custom`. `ChatAssistantMessage` читает `kind` через `useMessage` и рендерит нужный пузырь.
+
+**Planned-сессия.** При заходе на `/chat` для `planned`-сессии — `PlannedSessionPlaceholder` с кнопкой Start. Авто-старт не делаем (дорогая AI-генерация вопросов).
+
+**SummaryDialog без финального POST.** Сервер сам переводит сессию в `completed` после последнего ответа. При `isFinished: true` в ответе answer/skip просто показываем `SummaryDialog`. `useFinishSession` нужен только для досрочного завершения.
+
+**Черновик ответа.** `useDraftAnswer` сохраняет текст в localStorage (`onboard:chat-draft:<sessionId>`). Очищается при успешном answer/skip/abandon.
+
+### 12.5 Lifecycle
 
 ```mermaid
 sequenceDiagram
@@ -923,145 +951,52 @@ sequenceDiagram
   participant P as SessionChatPage
   participant S as Server
 
-  U->>P: Open /sessions/:id/chat
-  P->>S: GET /sessions/:id
-  alt status === planned
-    P->>S: POST /sessions/:id/start
-    S-->>P: session + questions generated
-  end
-  P->>S: GET /sessions/:id/current-question
-  S-->>P: { questionText, order, totalQuestions }
-  P->>U: show assistant message with question
-  U->>P: type answer
-  P->>S: POST /sessions/:id/answer { answerText }
-  S-->>P: { score, feedback, recommendations, nextQuestion?, isFinished }
-  P->>U: render assistant feedback + next question
+  U->>P: /sessions/:id/chat
+  P->>S: GET /sessions/:id + GET /current-question
+  S-->>P: session (in_progress) + вопрос
+  P->>U: QuestionBubble (order/difficulty/isDivide)
+  U->>P: вводит ответ → Send (или Skip)
+  P->>S: POST /answer { answerText }
+  S-->>P: { score, feedback, isFinished, nextQuestion? }
+  P->>U: EvaluationBubble + nextQuestion (если есть)
   alt isFinished
-    P->>U: show summary, navigate /sessions/:id/history
+    P->>U: SummaryDialog → navigate /history
   end
 ```
-
-### 12.5 Custom runtime (скетч)
-
-Все запросы — напрямую сгенерированные orval-хуки; wrapper'ы `useAnswerQuestion` / `useSkipQuestion` добавляют invalidation.
-
-```ts
-// src/features/session-chat/hooks/useAnswerQuestion.ts
-import { useQueryClient } from '@tanstack/react-query';
-import {
-  useSessionsControllerAnswer,
-  getSessionsControllerFindOneQueryKey,
-  getSessionsControllerGetCurrentQuestionQueryKey,
-} from '@/api/generated/react-query';
-
-export const useAnswerQuestion = (sessionId: string) => {
-  const qc = useQueryClient();
-  return useSessionsControllerAnswer({
-    mutation: {
-      onSuccess: () => {
-        qc.invalidateQueries({ queryKey: getSessionsControllerFindOneQueryKey(sessionId) });
-        qc.invalidateQueries({ queryKey: getSessionsControllerGetCurrentQuestionQueryKey(sessionId) });
-      },
-    },
-  });
-};
-```
-
-```ts
-// src/features/session-chat/hooks/useChatRuntime.ts
-import {
-  useSessionsControllerGetCurrentQuestion,
-} from '@/api/generated/react-query';
-import { useAnswerQuestion } from './useAnswerQuestion';
-
-export function useChatRuntime(sessionId: string) {
-  const [messages, setMessages] = useState<ThreadMessageLike[]>([]);
-  const [isRunning, setRunning] = useState(false);
-
-  const { data: currentQ } = useSessionsControllerGetCurrentQuestion(sessionId);
-  const answer = useAnswerQuestion(sessionId);
-
-  useEffect(() => {
-    if (currentQ && !messages.some((m) => m.metadata?.order === currentQ.order)) {
-      setMessages((prev) => [
-        ...prev,
-        makeAssistantMessage({
-          order: currentQ.order,
-          text: currentQ.questionText,
-          difficulty: currentQ.difficulty,
-        }),
-      ]);
-    }
-  }, [currentQ]);
-
-  return useExternalStoreRuntime({
-    isRunning,
-    messages,
-    convertMessage: (m) => m,
-    onNew: async ({ content }) => {
-      const userText = content[0].type === 'text' ? content[0].text : '';
-      setMessages((prev) => [...prev, makeUserMessage(userText)]);
-      setRunning(true);
-      try {
-        const res = await answer.mutateAsync({
-          id: sessionId,
-          data: { answerText: userText },
-        });
-        setMessages((prev) => [...prev, makeEvaluationMessage(res)]);
-        if (!res.isFinished && res.nextQuestion) {
-          setMessages((prev) => [...prev, makeAssistantMessage({
-            order: res.nextQuestion.order,
-            text: res.nextQuestion.questionText,
-            difficulty: res.nextQuestion.difficulty,
-          })]);
-        }
-      } catch (e) {
-        toast.error(getApiErrorMessage(e));
-      } finally {
-        setRunning(false);
-      }
-    },
-  });
-}
-```
-
-> Обрати внимание на сигнатуру `answer.mutateAsync({ id, data })` — это стандарт orval: path-params + body передаются одним объектом. Точная форма видна в сгенерированном типе `SessionsControllerAnswerMutationRequest`.
 
 ### 12.6 UI
 
-- **Layout**: `grid grid-cols-[1fr_320px]` (chat | control panel). На mobile — panel превращается в floating `<Sheet>`.
-- **ChatThread**: `<Thread>` с кастомными message-рендерами:
-  - обычное сообщение-вопрос: текст + `<Badge>` сложности (`1-5`) + `<Badge variant="outline">` "Вопрос `{order}/{total}`".
-  - evaluation-сообщение: `<ScoreBadge>` (success >= 70 / warning 40-69 / destructive < 40) + feedback text + collapsible `<Accordion>` с recommendations.
-- **Input**: рядом с кнопкой Send — кнопка "Skip question" (ghost + tooltip).
-- **SessionControlPanel**:
-  - `<Progress value={(currentOrder/total)*100}/>`.
-  - Список вопросов-чекбоксов (отвечено/пропущено/текущий).
-  - Кнопки `Finish early` (`finishSession()`) и `Abandon` (`abandonSession()` с confirm dialog).
-  - Мета: модель AI (`session.config.model`), время старта.
+- **Layout** (desktop): `flex [chat flex-1] [sidebar 320px border-l]`. На mobile — sidebar в `<Sheet>` по FAB.
+- **Пузыри**: вопрос — bg-muted слева; ответ пользователя — bg-primary справа; evaluation — bg-muted слева.
+- **Composer**: textarea (3 строки, resize-none) + иконка Skip (с `title`-tooltip) + иконка Send. Cmd+Enter отправляет.
+- **QuestionsChecklist**: иконки Check/Circle/ChevronRight/Clock + ScoreBadge для отвеченных.
+- **Markdown** в feedback рендерится через `<Markdown>` (react-markdown + prose-классы Tailwind).
 
-### 12.7 View-mode (для завершённых сессий)
+### 12.7 Edge cases
 
-`pages/SessionHistoryPage.tsx` — тот же `<ChatThread>`, но runtime read-only: messages собираются из `session.questions[].answers[]`. Нет input'а. Показываем suggestion: "Начать новую сессию по этой технологии".
+| Ситуация | Поведение |
+|---|---|
+| `/chat` для `completed`/`abandoned` | redirect → `/history` |
+| `/history` для `in_progress` | redirect → `/chat` |
+| `/history` для `planned` | redirect → `/sessions` |
+| 403 на `findOne` | toast + redirect `/sessions` |
+| 404 на `findOne` | redirect `/404` |
+| POST /answer падает | `ErrorBubble` + Retry (текст в localStorage) |
+| Skip | мгновенная локальная evaluation score=0, затем invalidate |
+| Вкладка закрыта во время AI | при возврате гидрация подберёт сохранённый ответ |
 
-### 12.8 Состояния
+### 12.8 Advanced (фаза 11)
 
-- Пустая сессия / ещё нет вопроса → spinner + "Генерируем вопросы...".
-- AI-оценка в процессе → `isRunning: true` → assistant-ui сам покажет typing-indicator.
-- Ошибка от AI → feedback-сообщение с красной рамкой и кнопкой Retry (повторный `answer.mutateAsync`).
-
-### 12.9 Advanced (фаза 11)
-
-- **Streaming ответов** AI через SSE (требует backend-расширения `POST /sessions/:id/answer/stream`).
-- Голосовой ввод (Web Speech API).
+- Streaming AI через SSE.
 - Code-highlighting в markdown (shiki).
-- Подсказка «посмотреть объяснение после завершения».
+- Голосовой ввод (Web Speech API).
 
-### Критерий готовности
+### Критерий готовности ✅
 
-- Полный цикл: открыть chat → пройти 3 вопроса (1 ответ, 1 skip, 1 ответ) → страница автоматически перейдёт в history view после последнего.
-- Abandon с любого момента → сессия помечается abandoned, progress сохраняется.
-- UI адаптивный (320px — 1920px).
+- Полный цикл: chat → 3 вопроса → SummaryDialog → history view.
+- Abandon → `abandoned`, progress сохраняется.
+- UI адаптивный (mobile Sheet + desktop sidebar).
+- Backend lint + build: OK. Frontend lint + build: OK.
 
 ---
 
