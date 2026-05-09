@@ -24,6 +24,12 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { AnswerQuestionDto } from './dto/answer-question.dto';
 import { FindSessionsQueryDto } from './dto/find-sessions-query.dto';
+import { CurrentQuestionDto } from './dto/current-question.dto';
+import { AnswerResultDto } from './dto/answer-result.dto';
+import { SkipResultDto } from './dto/skip-result.dto';
+import { FinishResultDto } from './dto/finish-result.dto';
+import { AbandonResultDto } from './dto/abandon-result.dto';
+import { StartResultDto } from './dto/start-result.dto';
 
 @ApiTags('sessions')
 @ApiBearerAuth()
@@ -73,7 +79,7 @@ export class SessionsController {
 
   @Post(':id/start')
   @ApiOperation({ summary: 'Start a planned session — generates questions' })
-  @ApiOkResponse({ type: SessionDto })
+  @ApiOkResponse({ type: StartResultDto })
   @ApiQuery({ name: 'lang', required: false, example: 'en' })
   start(
     @CurrentUser() user: { id: string },
@@ -87,6 +93,7 @@ export class SessionsController {
   @ApiOperation({
     summary: 'Get the current question of an in-progress session',
   })
+  @ApiOkResponse({ type: CurrentQuestionDto })
   currentQuestion(
     @CurrentUser() user: { id: string },
     @Param('id', ParseUUIDPipe) id: string,
@@ -96,6 +103,7 @@ export class SessionsController {
 
   @Post(':id/skip')
   @ApiOperation({ summary: 'Skip the current question (score = 0)' })
+  @ApiOkResponse({ type: SkipResultDto })
   skip(
     @CurrentUser() user: { id: string },
     @Param('id', ParseUUIDPipe) id: string,
@@ -107,6 +115,7 @@ export class SessionsController {
   @ApiOperation({
     summary: 'Submit an answer; AI evaluates, updates progress, advances',
   })
+  @ApiOkResponse({ type: AnswerResultDto })
   answer(
     @CurrentUser() user: { id: string },
     @Param('id', ParseUUIDPipe) id: string,
@@ -119,6 +128,7 @@ export class SessionsController {
   @ApiOperation({
     summary: 'Finish session — compute score, update user league',
   })
+  @ApiOkResponse({ type: FinishResultDto })
   finish(
     @CurrentUser() user: { id: string },
     @Param('id', ParseUUIDPipe) id: string,
@@ -130,6 +140,7 @@ export class SessionsController {
   @ApiOperation({
     summary: 'Abandon session early — progress on answered questions is kept',
   })
+  @ApiOkResponse({ type: AbandonResultDto })
   abandon(
     @CurrentUser() user: { id: string },
     @Param('id', ParseUUIDPipe) id: string,
