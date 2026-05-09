@@ -6,12 +6,17 @@
  * OpenAPI spec version: 1.0
  */
 
+export * from "./abandonResultDto";
 export * from "./aiProviderDto";
 export * from "./aiProvidersDto";
+export * from "./answerNextQuestionDto";
 export * from "./answerQuestionDto";
+export * from "./answerResultDto";
 export * from "./authResponseDto";
 export * from "./createSessionDto";
 export * from "./createSessionDtoConfig";
+export * from "./currentQuestionDto";
+export * from "./finishResultDto";
 export * from "./loginDto";
 export * from "./questionDetailDto";
 export * from "./questionsControllerFindAllParams";
@@ -30,6 +35,9 @@ export * from "./sessionsListDto";
 export * from "./sessionTechnologyDto";
 export * from "./sessionTechnologyLevelDto";
 export * from "./sessionTechnologyLevelDtoDifficulty";
+export * from "./skipResultDto";
+export * from "./startResultDto";
+export * from "./startResultDtoStatus";
 export * from "./technologiesControllerFindAllParams";
 export * from "./technologiesControllerFindOneParams";
 export * from "./technologyDto";

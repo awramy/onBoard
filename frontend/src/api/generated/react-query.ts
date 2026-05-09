@@ -22,10 +22,14 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  AbandonResultDto,
   AiProvidersDto,
   AnswerQuestionDto,
+  AnswerResultDto,
   AuthResponseDto,
   CreateSessionDto,
+  CurrentQuestionDto,
+  FinishResultDto,
   LoginDto,
   QuestionDetailDto,
   QuestionsControllerFindAllParams,
@@ -37,6 +41,8 @@ import type {
   SessionsControllerFindOneParams,
   SessionsControllerStartParams,
   SessionsListDto,
+  SkipResultDto,
+  StartResultDto,
   TechnologiesControllerFindAllParams,
   TechnologiesControllerFindOneParams,
   TechnologyDto,
@@ -3174,7 +3180,7 @@ export const sessionsControllerStart = (
   params?: SessionsControllerStartParams,
   signal?: AbortSignal,
 ) => {
-  return customReactQueryAxios<SessionDto>({
+  return customReactQueryAxios<StartResultDto>({
     url: `/api/sessions/${id}/start`,
     method: "POST",
     params,
@@ -3260,7 +3266,7 @@ export const sessionsControllerCurrentQuestion = (
   id: string,
   signal?: AbortSignal,
 ) => {
-  return customReactQueryAxios<void>({
+  return customReactQueryAxios<CurrentQuestionDto>({
     url: `/api/sessions/${id}/current-question`,
     method: "GET",
     signal,
@@ -3421,7 +3427,7 @@ export function useSessionsControllerCurrentQuestion<
  * @summary Skip the current question (score = 0)
  */
 export const sessionsControllerSkip = (id: string, signal?: AbortSignal) => {
-  return customReactQueryAxios<void>({
+  return customReactQueryAxios<SkipResultDto>({
     url: `/api/sessions/${id}/skip`,
     method: "POST",
     signal,
@@ -3507,7 +3513,7 @@ export const sessionsControllerAnswer = (
   answerQuestionDto: BodyType<AnswerQuestionDto>,
   signal?: AbortSignal,
 ) => {
-  return customReactQueryAxios<void>({
+  return customReactQueryAxios<AnswerResultDto>({
     url: `/api/sessions/${id}/answer`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -3591,7 +3597,7 @@ export const useSessionsControllerAnswer = <
  * @summary Finish session — compute score, update user league
  */
 export const sessionsControllerFinish = (id: string, signal?: AbortSignal) => {
-  return customReactQueryAxios<void>({
+  return customReactQueryAxios<FinishResultDto>({
     url: `/api/sessions/${id}/finish`,
     method: "POST",
     signal,
@@ -3673,7 +3679,7 @@ export const useSessionsControllerFinish = <
  * @summary Abandon session early — progress on answered questions is kept
  */
 export const sessionsControllerAbandon = (id: string, signal?: AbortSignal) => {
-  return customReactQueryAxios<void>({
+  return customReactQueryAxios<AbandonResultDto>({
     url: `/api/sessions/${id}/abandon`,
     method: "POST",
     signal,

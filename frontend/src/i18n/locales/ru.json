@@ -51,6 +51,7 @@
       "emailTaken": "Этот email уже зарегистрирован",
       "badRequest": "Некорректный запрос",
       "sessionExpired": "Сеанс истёк. Пожалуйста, войдите снова",
+      "offline": "Нет соединения с сервером",
       "unknown": "Произошла ошибка. Попробуйте позже"
     },
     "form": {
@@ -149,6 +150,68 @@
       "confirm": "Запустить",
       "confirming": "Запуск...",
       "cancel": "Отмена"
+    }
+  },
+  "sessionChat": {
+    "loading": "Загрузка сессии...",
+    "generatingQuestions": "Генерируем вопросы...",
+    "thinking": "AI оценивает ваш ответ...",
+    "emptyTitle": "Сессия начата",
+    "emptyDescription": "Первый вопрос появится здесь через несколько секунд.",
+    "questionLabel": "Вопрос {{order}} из {{total}}",
+    "difficultyLabel": "Сложность {{value}}/5",
+    "isDivideHint": "Доразбор предыдущего ответа",
+    "fullyClosed": "Тема закрыта",
+    "recommendations": "Рекомендации",
+    "skipFeedback": "Вопрос пропущен. Оценка — 0.",
+    "skipped": "Пропущено",
+    "answered": "Отвечено",
+    "current": "Текущий",
+    "pending": "Ожидает",
+    "composer": {
+      "placeholder": "Напишите ваш ответ...",
+      "send": "Отправить",
+      "skip": "Пропустить",
+      "skipTooltip": "Пропуск даёт оценку 0 за этот вопрос"
+    },
+    "controlPanel": {
+      "progress": "{{cur}} / {{total}}",
+      "model": "Модель: {{model}}",
+      "startedAt": "Начата: {{time}}",
+      "finishEarly": "Завершить досрочно",
+      "abandon": "Прервать сессию"
+    },
+    "confirmAbandon": {
+      "title": "Прервать сессию?",
+      "description": "Прогресс по уже отвеченным вопросам будет сохранён. Вернуться к этой сессии нельзя.",
+      "confirm": "Да, прервать",
+      "cancel": "Отмена"
+    },
+    "summary": {
+      "title": "Сессия завершена",
+      "avgScore": "Средняя оценка: {{score}}",
+      "answered": "Ответов: {{answered}} / {{total}}",
+      "league": "Лига: {{league}}",
+      "scoreEarned": "+{{score}} очков",
+      "viewHistory": "Открыть историю",
+      "newSession": "Новая сессия"
+    },
+    "errors": {
+      "loadFailed": "Не удалось загрузить сессию",
+      "answerFailed": "AI не смог оценить ответ",
+      "retry": "Повторить",
+      "forbidden": "У вас нет доступа к этой сессии"
+    },
+    "history": {
+      "title": "История сессии",
+      "noAnswers": "Эта сессия не была начата",
+      "newSessionCta": "Новая сессия по технологии"
+    },
+    "notStarted": {
+      "title": "Сессия не запущена",
+      "description": "Запустите сессию, чтобы начать прохождение.",
+      "start": "Запустить",
+      "starting": "Запуск..."
     }
   }
 }

@@ -51,6 +51,7 @@
       "emailTaken": "This email is already registered",
       "badRequest": "Bad request",
       "sessionExpired": "Session expired. Please sign in again",
+      "offline": "No connection to server",
       "unknown": "An error occurred. Please try again"
     },
     "form": {
@@ -149,6 +150,68 @@
       "confirm": "Start",
       "confirming": "Starting...",
       "cancel": "Cancel"
+    }
+  },
+  "sessionChat": {
+    "loading": "Loading session...",
+    "generatingQuestions": "Generating questions...",
+    "thinking": "AI is evaluating your answer...",
+    "emptyTitle": "Session started",
+    "emptyDescription": "The first question will appear here in a few seconds.",
+    "questionLabel": "Question {{order}} of {{total}}",
+    "difficultyLabel": "Difficulty {{value}}/5",
+    "isDivideHint": "Follow-up on previous answer",
+    "fullyClosed": "Topic mastered",
+    "recommendations": "Recommendations",
+    "skipFeedback": "Question skipped. Score — 0.",
+    "skipped": "Skipped",
+    "answered": "Answered",
+    "current": "Current",
+    "pending": "Pending",
+    "composer": {
+      "placeholder": "Write your answer...",
+      "send": "Send",
+      "skip": "Skip",
+      "skipTooltip": "Skipping gives a score of 0 for this question"
+    },
+    "controlPanel": {
+      "progress": "{{cur}} / {{total}}",
+      "model": "Model: {{model}}",
+      "startedAt": "Started: {{time}}",
+      "finishEarly": "Finish early",
+      "abandon": "Abandon session"
+    },
+    "confirmAbandon": {
+      "title": "Abandon session?",
+      "description": "Progress on already answered questions will be saved. You cannot return to this session.",
+      "confirm": "Yes, abandon",
+      "cancel": "Cancel"
+    },
+    "summary": {
+      "title": "Session complete",
+      "avgScore": "Average score: {{score}}",
+      "answered": "Answered: {{answered}} / {{total}}",
+      "league": "League: {{league}}",
+      "scoreEarned": "+{{score}} points",
+      "viewHistory": "View history",
+      "newSession": "New session"
+    },
+    "errors": {
+      "loadFailed": "Failed to load session",
+      "answerFailed": "AI could not evaluate the answer",
+      "retry": "Retry",
+      "forbidden": "You don't have access to this session"
+    },
+    "history": {
+      "title": "Session history",
+      "noAnswers": "This session was not started",
+      "newSessionCta": "New session for this technology"
+    },
+    "notStarted": {
+      "title": "Session not started",
+      "description": "Start the session to begin.",
+      "start": "Start",
+      "starting": "Starting..."
     }
   }
 }
