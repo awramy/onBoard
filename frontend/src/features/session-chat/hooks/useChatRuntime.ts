@@ -25,7 +25,7 @@ import {
 } from '../lib/messageBuilders';
 
 export function useChatRuntime(sessionId: string) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { clearDraft } = useDraftAnswer(sessionId);
 
@@ -184,8 +184,6 @@ export function useChatRuntime(sessionId: string) {
     },
   });
 
-  const lang = i18n.language;
-
   return {
     runtime,
     sessionData: session.data,
@@ -198,7 +196,6 @@ export function useChatRuntime(sessionId: string) {
     handleRetry,
     handleFinishEarly,
     isRunning,
-    lang,
   };
 }
 

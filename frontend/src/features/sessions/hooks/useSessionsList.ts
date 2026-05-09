@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useSessionsControllerFindAll } from '@/api/generated/react-query';
 import type { SessionTab } from '@/features/sessions/components/SessionsTabs';
 
@@ -11,7 +10,6 @@ const TAB_STATUS_STRING: Record<SessionTab, string | undefined> = {
 };
 
 export function useSessionsList(tab: SessionTab) {
-  const { i18n } = useTranslation();
   const [currentTab, setCurrentTab] = useState(tab);
   const [take, setTake] = useState(PAGE_SIZE);
 
@@ -25,7 +23,6 @@ export function useSessionsList(tab: SessionTab) {
   const params = {
     take,
     skip: 0,
-    lang: i18n.language,
     ...(status ? { status } : {}),
   };
 

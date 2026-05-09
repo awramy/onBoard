@@ -16,6 +16,9 @@ httpInstance.interceptors.request.use((config) => {
   }
   const lang = i18n.resolvedLanguage ?? env.defaultLang;
   config.headers['Accept-Language'] = lang;
+  // Бэкенд читает lang из query param, не из заголовка — добавляем ко всем запросам.
+  // Явный lang в config.params (если передан хуком) перебивает дефолт через spread.
+  config.params = { lang, ...config.params };
   return config;
 });
 
