@@ -86,7 +86,7 @@
 | type        | VARCHAR(20) | NOT NULL DEFAULT 'theory'                           | Тип вопроса ('theory', 'practice')                                                                            |
 | difficulty  | INTEGER     | NOT NULL CHECK (difficulty BETWEEN 1 AND 50)        | Сложность вопроса                                                                                             |
 | explanation | JSONB       |                                                     | Пояснение к правильному ответу (i18n)                                                                         |
-| is_devide   | BOOLEAN     |                                                     | Является ли прогресс по вопросу разделяемым (должен быть закрыт одним ответом, не может быть закрыт на часть) |
+| is_divide   | BOOLEAN     |                                                     | Является ли прогресс по вопросу разделяемым (должен быть закрыт одним ответом, не может быть закрыт на часть) |
 | created_at  | TIMESTAMP   | DEFAULT NOW()                                       | Дата создания                                                                                                 |
 | updated_at  | TIMESTAMP   | DEFAULT NOW()                                       | Дата последнего обновления                                                                                    |
 

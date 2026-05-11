@@ -18,6 +18,9 @@ export class UserProgressLevelDto {
   @ApiProperty({ example: 'junior', enum: ['junior', 'middle', 'senior'] })
   difficulty!: string;
 
+  @ApiProperty({ description: 'Средний % изученности уровня (0–100)' })
+  score!: number;
+
   @ApiProperty({ type: [UserProgressTopicDto] })
   topics!: UserProgressTopicDto[];
 }
@@ -28,6 +31,9 @@ export class UserProgressTechnologyDto {
 
   @ApiProperty()
   name!: string;
+
+  @ApiProperty({ description: 'Средний % изученности технологии (0–100)' })
+  score!: number;
 
   @ApiProperty({ type: [UserProgressLevelDto] })
   levels!: UserProgressLevelDto[];

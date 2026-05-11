@@ -35,77 +35,102 @@ export class UsersService {
   }
 
   async getAggregatedProgress(userId: string, locale: string) {
+    // Прогресс пользователя по топикам
     const topicProgress = await this.prisma.userTopicProgress.findMany({
       where: { userId },
       include: {
         topic: {
           include: {
-            technologyLevels: {
-              include: {
-                technologyLevel: {
-                  include: { technology: true },
-                },
-              },
-            },
+            technologyLevels: { select: { technologyLevelId: true } },
           },
         },
       },
     });
 
+    if (topicProgress.length === 0) return [];
+
+    // Карта topicId → score для быстрого доступа
+    const progressByTopicId = new Map(
+      topicProgress.map((tp) => [tp.topicId, tp.score]),
+    );
+
+    // Уникальные id уровней, затронутых прогрессом пользователя
+    const levelIds = new Set<string>();
+    for (const tp of topicProgress) {
+      for (const tlt of tp.topic.technologyLevels) {
+        levelIds.add(tlt.technologyLevelId);
+      }
+    }
+
+    // Загружаем уровни с ПОЛНЫМ списком топиков — чтобы знаменатель был верным
+    const levelsWithAllTopics = await this.prisma.technologyLevel.findMany({
+      where: { id: { in: Array.from(levelIds) } },
+      include: {
+        technology: true,
+        topics: {
+          include: { topic: { select: { id: true, name: true } } },
+        },
+      },
+    });
+
+    // Группируем по технологии
     const byTechnology = new Map<
       string,
       {
         id: string;
         name: string;
-        levels: Map<
-          string,
-          {
-            id: string;
-            difficulty: string;
-            topics: {
-              id: string;
-              name: string | null;
-              score: number;
-            }[];
-          }
-        >;
+        levels: {
+          id: string;
+          difficulty: string;
+          score: number;
+          topics: { id: string; name: string | null; score: number }[];
+        }[];
       }
     >();
 
-    for (const tp of topicProgress) {
-      for (const tlt of tp.topic.technologyLevels) {
-        const tech = tlt.technologyLevel.technology;
-        const level = tlt.technologyLevel;
+    for (const level of levelsWithAllTopics) {
+      const tech = level.technology;
 
-        if (!byTechnology.has(tech.id)) {
-          byTechnology.set(tech.id, {
-            id: tech.id,
-            name: tech.name,
-            levels: new Map(),
-          });
-        }
-        const techEntry = byTechnology.get(tech.id)!;
-
-        if (!techEntry.levels.has(level.id)) {
-          techEntry.levels.set(level.id, {
-            id: level.id,
-            difficulty: level.difficulty,
-            topics: [],
-          });
-        }
-        techEntry.levels.get(level.id)!.topics.push({
-          id: tp.topic.id,
-          name: localize(tp.topic.name, locale),
-          score: tp.score,
-        });
+      if (!byTechnology.has(tech.id)) {
+        byTechnology.set(tech.id, { id: tech.id, name: tech.name, levels: [] });
       }
+
+      const topicList = level.topics.map((tlt) => ({
+        id: tlt.topic.id,
+        name: localize(tlt.topic.name, locale),
+        score: progressByTopicId.get(tlt.topicId) ?? 0,
+      }));
+
+      const levelScore =
+        topicList.length > 0
+          ? Math.round(
+              topicList.reduce((sum, t) => sum + t.score, 0) / topicList.length,
+            )
+          : 0;
+
+      byTechnology.get(tech.id)!.levels.push({
+        id: level.id,
+        difficulty: level.difficulty,
+        score: levelScore,
+        topics: topicList,
+      });
     }
 
-    return Array.from(byTechnology.values()).map((tech) => ({
-      id: tech.id,
-      name: tech.name,
-      levels: Array.from(tech.levels.values()),
-    }));
+    return Array.from(byTechnology.values()).map((tech) => {
+      const techScore =
+        tech.levels.length > 0
+          ? Math.round(
+              tech.levels.reduce((sum, l) => sum + l.score, 0) /
+                tech.levels.length,
+            )
+          : 0;
+      return {
+        id: tech.id,
+        name: tech.name,
+        score: techScore,
+        levels: tech.levels,
+      };
+    });
   }
 
   async getTopicProgress(
