@@ -122,6 +122,7 @@ model InterviewSessionQuestion {
   questionText String   @map("question_text") @db.Text
   difficulty   Int
   order        Int
+  isClarifying Boolean  @default(false) @map("is_clarifying")
   createdAt    DateTime @default(now()) @map("created_at")
 
   session  InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)

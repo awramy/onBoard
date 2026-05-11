@@ -160,7 +160,7 @@
     "emptyDescription": "The first question will appear here in a few seconds.",
     "questionLabel": "Question {{order}} of {{total}}",
     "difficultyLabel": "Difficulty {{value}}/5",
-    "isDivideHint": "Follow-up on previous answer",
+    "clarifyingHint": "Follow-up on previous answer",
     "fullyClosed": "Topic mastered",
     "recommendations": "Recommendations",
     "skipFeedback": "Question skipped. Score — 0.",
@@ -206,6 +206,12 @@
       "title": "Session history",
       "noAnswers": "This session was not started",
       "newSessionCta": "New session for this technology"
+    },
+    "quickHistory": {
+      "title": "Previous attempts",
+      "loading": "Loading history...",
+      "empty": "No previous attempts.",
+      "error": "Failed to load history."
     },
     "notStarted": {
       "title": "Session not started",

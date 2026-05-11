@@ -103,7 +103,7 @@ export function useChatRuntime(sessionId: string) {
               questionId: null,
               questionText: res.nextQuestion.questionText,
               difficulty: res.nextQuestion.difficulty,
-              isDivide: res.nextQuestion.isDivide,
+              isClarifying: res.nextQuestion.isClarifying,
               order: res.nextQuestion.order,
             },
             session.data?.totalQuestions ?? null,

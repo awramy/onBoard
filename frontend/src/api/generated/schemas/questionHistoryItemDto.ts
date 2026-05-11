@@ -6,11 +6,11 @@
  * OpenAPI spec version: 1.0
  */
 
-export interface AnswerNextQuestionDto {
-  id: string;
+export interface QuestionHistoryItemDto {
+  sessionQuestionId: string;
+  sessionId: string;
   questionText: string;
-  difficulty: number;
-  order: number;
-  isDivide: boolean;
-  isClarifying: boolean;
+  answerText: string;
+  score: number;
+  createdAt: string;
 }

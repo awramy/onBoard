@@ -9,6 +9,7 @@ export interface GeneratedQuestion {
   questionText: string;
   difficulty: number;
   order: number;
+  isClarifying: boolean;
 }
 
 interface SelectedQuestion {
@@ -23,7 +24,7 @@ interface SelectedQuestion {
 export class QuestionGeneratorService {
   private readonly logger = new Logger(QuestionGeneratorService.name);
   // AI-NOTE: Сколько последних попыток по вопросу попадает в контекст AI при генерации follow-up
-  private static readonly MAX_HISTORY_FOR_AI = 5;
+  static readonly MAX_HISTORY_FOR_AI = 5;
 
   constructor(
     private prisma: PrismaService,
@@ -111,7 +112,7 @@ export class QuestionGeneratorService {
 
     for (let i = 0; i < selected.length; i++) {
       const s = selected[i];
-      const questionText = await this.resolveQuestionText(
+      const resolved = await this.resolveQuestionText(
         userId,
         s,
         locale,
@@ -122,9 +123,10 @@ export class QuestionGeneratorService {
         data: {
           sessionId,
           questionId: s.questionId,
-          questionText,
+          questionText: resolved.text,
           difficulty: s.difficulty,
           order: i + 1,
+          isClarifying: resolved.isClarifying,
         },
       });
 
@@ -133,6 +135,7 @@ export class QuestionGeneratorService {
         questionText: sq.questionText,
         difficulty: sq.difficulty,
         order: sq.order,
+        isClarifying: sq.isClarifying,
       });
     }
 
@@ -143,12 +146,13 @@ export class QuestionGeneratorService {
   // Если у пользователя уже были попытки по вопросу (0 < mastery < 1) и AI доступен —
   // генерируем уточняющий вопрос, фокусирующийся на recommendations из прошлых ответов.
   // Иначе — оригинальный локализованный текст. Любая ошибка AI ведёт к fallback.
+  // isClarifying=true только когда AI успешно вернул текст, отличный от оригинала.
   private async resolveQuestionText(
     userId: string,
     selected: SelectedQuestion,
     locale: string,
     modelName: string,
-  ): Promise<string> {
+  ): Promise<{ text: string; isClarifying: boolean }> {
     const originalText = localize(selected.text, locale) ?? '';
 
     const progress = await this.progressService.getQuestionProgress(
@@ -164,7 +168,7 @@ export class QuestionGeneratorService {
       this.aiService.hasProviders();
 
     if (!shouldUseAi) {
-      return originalText;
+      return { text: originalText, isClarifying: false };
     }
 
     try {
@@ -174,7 +178,7 @@ export class QuestionGeneratorService {
       );
 
       if (history.length === 0) {
-        return originalText;
+        return { text: originalText, isClarifying: false };
       }
 
       const explanationText = selected.explanation
@@ -197,20 +201,24 @@ export class QuestionGeneratorService {
         this.logger.warn(
           `AI returned empty follow-up for question ${selected.questionId}, fallback to original`,
         );
-        return originalText;
+        return { text: originalText, isClarifying: false };
+      }
+
+      if (trimmed === originalText.trim()) {
+        return { text: trimmed, isClarifying: false };
       }
 
       this.logger.debug(
         `AI follow-up generated for question ${selected.questionId} (mastery=${mastery})`,
       );
-      return trimmed;
+      return { text: trimmed, isClarifying: true };
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Unknown AI error';
       this.logger.warn(
         `AI follow-up generation failed for question ${selected.questionId}: ${message}. Falling back to original text.`,
       );
-      return originalText;
+      return { text: originalText, isClarifying: false };
     }
   }
 

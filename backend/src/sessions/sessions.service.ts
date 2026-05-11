@@ -121,6 +121,7 @@ export class SessionsService {
       questions: session.questions.map(({ question, ...q }) => ({
         ...q,
         isDivide: question?.isDivide ?? false,
+        isClarifying: q.isClarifying,
       })),
     };
   }
@@ -212,6 +213,7 @@ export class SessionsService {
       questionText: question.questionText,
       difficulty: question.difficulty,
       isDivide: question.question?.isDivide ?? false,
+      isClarifying: question.isClarifying,
       order: question.order,
       totalQuestions: session.totalQuestions,
     };
@@ -310,7 +312,7 @@ export class SessionsService {
       : '';
 
     const previousAnswers: { text: string; feedback: string; score: number }[] =
-      isDivide
+      sessionQuestion.isClarifying
         ? sessionQuestion.answers.map((a) => ({
             text: a.answerText,
             feedback: typeof a.aiFeedback === 'string' ? a.aiFeedback : '',
@@ -401,6 +403,7 @@ export class SessionsService {
       difficulty: number;
       order: number;
       isDivide: boolean;
+      isClarifying: boolean;
     } | null = null;
 
     if (!isFinished) {
@@ -421,6 +424,7 @@ export class SessionsService {
           difficulty: next.difficulty,
           order: next.order,
           isDivide: next.question?.isDivide ?? false,
+          isClarifying: next.isClarifying,
         };
       }
     }
@@ -524,6 +528,55 @@ export class SessionsService {
     return {
       sessionId: updated.id,
       status: updated.status,
+    };
+  }
+
+  // AI-NOTE: Последние N попыток пользователя по базовому questionId из всех сессий —
+  // источник для quick history в пузырьке уточняющего вопроса на фронте.
+  async getQuestionHistory(
+    sessionId: string,
+    sessionQuestionId: string,
+    userId: string,
+  ) {
+    const session = await this.prisma.interviewSession.findUnique({
+      where: { id: sessionId },
+    });
+    if (!session) throw new NotFoundException('Session not found');
+    if (session.userId !== userId)
+      throw new ForbiddenException('Not your session');
+
+    const sq = await this.prisma.interviewSessionQuestion.findFirst({
+      where: { id: sessionQuestionId, sessionId },
+      select: { questionId: true },
+    });
+    if (!sq) throw new NotFoundException('Session question not found');
+    if (!sq.questionId) return { items: [] };
+
+    const answers = await this.prisma.interviewAnswer.findMany({
+      where: {
+        sessionQuestion: { questionId: sq.questionId, session: { userId } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: QuestionGeneratorService.MAX_HISTORY_FOR_AI,
+      select: {
+        answerText: true,
+        score: true,
+        createdAt: true,
+        sessionQuestion: {
+          select: { id: true, sessionId: true, questionText: true },
+        },
+      },
+    });
+
+    return {
+      items: answers.map((a) => ({
+        sessionQuestionId: a.sessionQuestion.id,
+        sessionId: a.sessionQuestion.sessionId,
+        questionText: a.sessionQuestion.questionText,
+        answerText: a.answerText,
+        score: a.score,
+        createdAt: a.createdAt,
+      })),
     };
   }
 

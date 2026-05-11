@@ -13,7 +13,7 @@ function meta(data: ChatMeta): { custom: ChatMeta } {
 }
 
 export function makeQuestionMessage(
-  q: Pick<CurrentQuestionDto, 'id' | 'questionId' | 'questionText' | 'difficulty' | 'isDivide' | 'order'>,
+  q: Pick<CurrentQuestionDto, 'id' | 'questionId' | 'questionText' | 'difficulty' | 'isClarifying' | 'order'>,
   totalQuestions: number | null | undefined,
 ): ThreadMessageLike {
   return {
@@ -25,7 +25,8 @@ export function makeQuestionMessage(
       order: q.order,
       totalQuestions: totalQuestions ?? null,
       difficulty: q.difficulty,
-      isDivide: q.isDivide,
+      isClarifying: q.isClarifying,
+      sessionQuestionId: q.id,
       questionId: q.questionId ?? null,
     }),
   };
@@ -99,7 +100,8 @@ function makeQuestionMessageFromDto(
       order: q.order,
       totalQuestions,
       difficulty: q.difficulty,
-      isDivide: q.isDivide,
+      isClarifying: q.isClarifying,
+      sessionQuestionId: q.id,
       questionId: q.questionId ?? null,
     }),
   };

@@ -16,6 +16,7 @@ export interface SessionQuestionDto {
   difficulty: number;
   order: number;
   isDivide: boolean;
+  isClarifying: boolean;
   createdAt: string;
   answers: SessionAnswerDto[];
 }

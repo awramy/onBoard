@@ -30,6 +30,7 @@ import { SkipResultDto } from './dto/skip-result.dto';
 import { FinishResultDto } from './dto/finish-result.dto';
 import { AbandonResultDto } from './dto/abandon-result.dto';
 import { StartResultDto } from './dto/start-result.dto';
+import { QuestionHistoryDto } from './dto/question-history.dto';
 
 @ApiTags('sessions')
 @ApiBearerAuth()
@@ -146,5 +147,23 @@ export class SessionsController {
     @Param('id', ParseUUIDPipe) id: string,
   ) {
     return this.sessionsService.abandon(id, user.id);
+  }
+
+  @Get(':id/questions/:sessionQuestionId/history')
+  @ApiOperation({
+    summary:
+      'История попыток пользователя по базовому questionId (последние 5)',
+  })
+  @ApiOkResponse({ type: QuestionHistoryDto })
+  getQuestionHistory(
+    @CurrentUser() user: { id: string },
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('sessionQuestionId', ParseUUIDPipe) sessionQuestionId: string,
+  ) {
+    return this.sessionsService.getQuestionHistory(
+      id,
+      sessionQuestionId,
+      user.id,
+    );
   }
 }

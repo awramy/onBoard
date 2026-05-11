@@ -47,6 +47,9 @@ export class SessionQuestionDto {
   isDivide!: boolean;
 
   @ApiProperty()
+  isClarifying!: boolean;
+
+  @ApiProperty()
   createdAt!: Date;
 
   @ApiProperty({ type: [SessionAnswerDto] })

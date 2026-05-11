@@ -13,6 +13,7 @@ export interface CurrentQuestionDto {
   questionText: string;
   difficulty: number;
   isDivide: boolean;
+  isClarifying: boolean;
   order: number;
   /** @nullable */
   totalQuestions: number | null;

@@ -50,6 +50,7 @@ function makeSessionQuestion(overrides?: Record<string, unknown>) {
     questionText: 'What is HTTP?',
     difficulty: 1,
     order: 1,
+    isClarifying: false,
     answers: [],
     ...overrides,
   };
@@ -188,7 +189,7 @@ describe('SessionsService.answer', () => {
     expect(result.isFullyClosed).toBe(true);
   });
 
-  it('passes previous answers for isDivide questions', async () => {
+  it('passes previous answers for clarifying questions (isClarifying=true)', async () => {
     const prevAnswers = [{ answerText: 'prev', aiFeedback: 'ok', score: 50 }];
     const prisma = {
       interviewSession: {
@@ -198,13 +199,13 @@ describe('SessionsService.answer', () => {
       interviewSessionQuestion: {
         findFirst: jest
           .fn()
-          .mockResolvedValueOnce(makeSessionQuestion({ answers: prevAnswers }))
+          .mockResolvedValueOnce(
+            makeSessionQuestion({ isClarifying: true, answers: prevAnswers }),
+          )
           .mockResolvedValueOnce(null),
       },
       question: {
-        findUnique: jest
-          .fn()
-          .mockResolvedValue(makeOriginalQuestion({ isDivide: true })),
+        findUnique: jest.fn().mockResolvedValue(makeOriginalQuestion()),
       },
       interviewAnswer: {
         create: jest.fn().mockResolvedValue({ id: ANSWER_ID }),
@@ -225,9 +226,49 @@ describe('SessionsService.answer', () => {
 
     expect(ai.evaluateAnswer).toHaveBeenCalledWith(
       expect.objectContaining({
-        isDivide: true,
         previousAnswers: [{ text: 'prev', feedback: 'ok', score: 50 }],
       }),
+      'auto',
+    );
+  });
+
+  it('does not pass previous answers for non-clarifying questions (isClarifying=false)', async () => {
+    const prevAnswers = [{ answerText: 'prev', aiFeedback: 'ok', score: 50 }];
+    const prisma = {
+      interviewSession: {
+        findUnique: jest.fn().mockResolvedValue(makeSession()),
+        update: jest.fn().mockResolvedValue(makeSession({ currentOrder: 2 })),
+      },
+      interviewSessionQuestion: {
+        findFirst: jest
+          .fn()
+          .mockResolvedValueOnce(
+            makeSessionQuestion({ isClarifying: false, answers: prevAnswers }),
+          )
+          .mockResolvedValueOnce(null),
+      },
+      question: {
+        findUnique: jest.fn().mockResolvedValue(makeOriginalQuestion()),
+      },
+      interviewAnswer: {
+        create: jest.fn().mockResolvedValue({ id: ANSWER_ID }),
+      },
+      userQuestionProgress: { update: jest.fn() },
+    };
+    const progress = {
+      getQuestionProgress: jest.fn().mockResolvedValue({ mastery: 0 }),
+      updateQuestionProgress: jest.fn().mockResolvedValue({}),
+      recalcTopicProgress: jest.fn().mockResolvedValue(undefined),
+    };
+    const ai = {
+      evaluateAnswer: jest.fn().mockResolvedValue(makeEvaluation()),
+    };
+
+    const service = buildService({ prisma, progress, ai });
+    await service.answer(SESSION_ID, USER_ID, 'Regular answer');
+
+    expect(ai.evaluateAnswer).toHaveBeenCalledWith(
+      expect.objectContaining({ previousAnswers: [] }),
       'auto',
     );
   });
@@ -518,6 +559,107 @@ describe('SessionsService.abandon', () => {
     await expect(service.abandon(SESSION_ID, USER_ID)).rejects.toThrow(
       NotFoundException,
     );
+  });
+});
+
+describe('SessionsService.getQuestionHistory', () => {
+  const SQ2_ID = '00000000-0000-0000-0000-000000000006';
+
+  it('returns last 5 attempts for the base questionId across all sessions', async () => {
+    const mockAnswers = [
+      {
+        answerText: 'answer 1',
+        score: 70,
+        createdAt: new Date('2025-01-02'),
+        sessionQuestion: { id: SQ2_ID, sessionId: SESSION_ID, questionText: 'Q?' },
+      },
+    ];
+    const prisma = {
+      interviewSession: {
+        findUnique: jest.fn().mockResolvedValue(makeSession()),
+      },
+      interviewSessionQuestion: {
+        findFirst: jest
+          .fn()
+          .mockResolvedValue({ questionId: QUESTION_ID }),
+      },
+      interviewAnswer: {
+        findMany: jest.fn().mockResolvedValue(mockAnswers),
+      },
+    };
+
+    const service = buildService({ prisma });
+    const result = await service.getQuestionHistory(SESSION_ID, SQ2_ID, USER_ID);
+
+    expect(prisma.interviewAnswer.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ take: 5, orderBy: { createdAt: 'desc' } }),
+    );
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0]).toMatchObject({
+      answerText: 'answer 1',
+      score: 70,
+      questionText: 'Q?',
+    });
+  });
+
+  it('returns empty items when questionId is null (source question deleted)', async () => {
+    const prisma = {
+      interviewSession: {
+        findUnique: jest.fn().mockResolvedValue(makeSession()),
+      },
+      interviewSessionQuestion: {
+        findFirst: jest.fn().mockResolvedValue({ questionId: null }),
+      },
+    };
+
+    const service = buildService({ prisma });
+    const result = await service.getQuestionHistory(SESSION_ID, SQ_ID, USER_ID);
+
+    expect(result.items).toEqual([]);
+  });
+
+  it('throws ForbiddenException for wrong user', async () => {
+    const prisma = {
+      interviewSession: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValue(makeSession({ userId: 'other-user' })),
+      },
+    };
+
+    const service = buildService({ prisma });
+    await expect(
+      service.getQuestionHistory(SESSION_ID, SQ_ID, USER_ID),
+    ).rejects.toThrow(ForbiddenException);
+  });
+
+  it('throws NotFoundException when session not found', async () => {
+    const prisma = {
+      interviewSession: {
+        findUnique: jest.fn().mockResolvedValue(null),
+      },
+    };
+
+    const service = buildService({ prisma });
+    await expect(
+      service.getQuestionHistory(SESSION_ID, SQ_ID, USER_ID),
+    ).rejects.toThrow(NotFoundException);
+  });
+
+  it('throws NotFoundException when sessionQuestion not found', async () => {
+    const prisma = {
+      interviewSession: {
+        findUnique: jest.fn().mockResolvedValue(makeSession()),
+      },
+      interviewSessionQuestion: {
+        findFirst: jest.fn().mockResolvedValue(null),
+      },
+    };
+
+    const service = buildService({ prisma });
+    await expect(
+      service.getQuestionHistory(SESSION_ID, SQ_ID, USER_ID),
+    ).rejects.toThrow(NotFoundException);
   });
 });
 

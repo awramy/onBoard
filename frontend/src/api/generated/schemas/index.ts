@@ -19,6 +19,8 @@ export * from "./currentQuestionDto";
 export * from "./finishResultDto";
 export * from "./loginDto";
 export * from "./questionDetailDto";
+export * from "./questionHistoryDto";
+export * from "./questionHistoryItemDto";
 export * from "./questionsControllerFindAllParams";
 export * from "./questionsControllerFindOneParams";
 export * from "./registerDto";

@@ -15,6 +15,9 @@ export class AnswerNextQuestionDto {
 
   @ApiProperty()
   isDivide!: boolean;
+
+  @ApiProperty()
+  isClarifying!: boolean;
 }
 
 export class AnswerResultDto {

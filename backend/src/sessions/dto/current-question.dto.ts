@@ -17,6 +17,9 @@ export class CurrentQuestionDto {
   isDivide!: boolean;
 
   @ApiProperty()
+  isClarifying!: boolean;
+
+  @ApiProperty()
   order!: number;
 
   @ApiProperty({ nullable: true, type: Number })

@@ -6,7 +6,8 @@ export type ChatMeta = {
   order?: number;
   totalQuestions?: number | null;
   difficulty?: number;
-  isDivide?: boolean;
+  isClarifying?: boolean;
+  sessionQuestionId?: string;
   questionId?: string | null;
   // evaluation
   score?: number;

@@ -32,6 +32,7 @@ import type {
   FinishResultDto,
   LoginDto,
   QuestionDetailDto,
+  QuestionHistoryDto,
   QuestionsControllerFindAllParams,
   QuestionsControllerFindOneParams,
   RegisterDto,
@@ -3756,3 +3757,181 @@ export const useSessionsControllerAbandon = <
     queryClient,
   );
 };
+
+/**
+ * @summary История попыток пользователя по базовому questionId (последние 5)
+ */
+export const sessionsControllerGetQuestionHistory = (
+  id: string,
+  sessionQuestionId: string,
+  signal?: AbortSignal,
+) => {
+  return customReactQueryAxios<QuestionHistoryDto>({
+    url: `/api/sessions/${id}/questions/${sessionQuestionId}/history`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getSessionsControllerGetQuestionHistoryQueryKey = (
+  id: string,
+  sessionQuestionId: string,
+) => {
+  return [
+    `/api/sessions/${id}/questions/${sessionQuestionId}/history`,
+  ] as const;
+};
+
+export const getSessionsControllerGetQuestionHistoryQueryOptions = <
+  TData = Awaited<ReturnType<typeof sessionsControllerGetQuestionHistory>>,
+  TError = ErrorType<unknown>,
+>(
+  id: string,
+  sessionQuestionId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof sessionsControllerGetQuestionHistory>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getSessionsControllerGetQuestionHistoryQueryKey(id, sessionQuestionId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof sessionsControllerGetQuestionHistory>>
+  > = ({ signal }) =>
+    sessionsControllerGetQuestionHistory(id, sessionQuestionId, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(id && sessionQuestionId),
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof sessionsControllerGetQuestionHistory>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type SessionsControllerGetQuestionHistoryQueryResult = NonNullable<
+  Awaited<ReturnType<typeof sessionsControllerGetQuestionHistory>>
+>;
+export type SessionsControllerGetQuestionHistoryQueryError = ErrorType<unknown>;
+
+export function useSessionsControllerGetQuestionHistory<
+  TData = Awaited<ReturnType<typeof sessionsControllerGetQuestionHistory>>,
+  TError = ErrorType<unknown>,
+>(
+  id: string,
+  sessionQuestionId: string,
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof sessionsControllerGetQuestionHistory>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof sessionsControllerGetQuestionHistory>>,
+          TError,
+          Awaited<ReturnType<typeof sessionsControllerGetQuestionHistory>>
+        >,
+        "initialData"
+      >;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useSessionsControllerGetQuestionHistory<
+  TData = Awaited<ReturnType<typeof sessionsControllerGetQuestionHistory>>,
+  TError = ErrorType<unknown>,
+>(
+  id: string,
+  sessionQuestionId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof sessionsControllerGetQuestionHistory>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof sessionsControllerGetQuestionHistory>>,
+          TError,
+          Awaited<ReturnType<typeof sessionsControllerGetQuestionHistory>>
+        >,
+        "initialData"
+      >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useSessionsControllerGetQuestionHistory<
+  TData = Awaited<ReturnType<typeof sessionsControllerGetQuestionHistory>>,
+  TError = ErrorType<unknown>,
+>(
+  id: string,
+  sessionQuestionId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof sessionsControllerGetQuestionHistory>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+/**
+ * @summary История попыток пользователя по базовому questionId (последние 5)
+ */
+
+export function useSessionsControllerGetQuestionHistory<
+  TData = Awaited<ReturnType<typeof sessionsControllerGetQuestionHistory>>,
+  TError = ErrorType<unknown>,
+>(
+  id: string,
+  sessionQuestionId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof sessionsControllerGetQuestionHistory>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getSessionsControllerGetQuestionHistoryQueryOptions(
+    id,
+    sessionQuestionId,
+    options,
+  );
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}

@@ -21,7 +21,7 @@ export function ChatThread({ runtime, mode, sessionId, onRetry, onSkip, onSend, 
   const { t } = useTranslation();
 
   return (
-    <ChatCallbacksContext.Provider value={{ onRetry, onSkip, onSend, isRunning }}>
+    <ChatCallbacksContext.Provider value={{ sessionId, onRetry, onSkip, onSend, isRunning }}>
       <AssistantRuntimeProvider runtime={runtime}>
         <ThreadPrimitive.Root className="flex flex-col h-full">
           <ThreadPrimitive.Viewport className="flex-1 overflow-y-auto">
