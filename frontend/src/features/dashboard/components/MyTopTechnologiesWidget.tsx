@@ -13,20 +13,8 @@ export function MyTopTechnologiesWidget() {
   const { data, isLoading, isError } = useUsersControllerGetProgress({});
 
   const techScores = data
-    ? data
-        .map((tech) => ({
-          id: tech.id,
-          name: tech.name,
-          score: tech.levels.reduce(
-            (sum, level) => sum + level.topics.reduce((s, topic) => s + topic.score, 0),
-            0,
-          ),
-        }))
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 5)
+    ? [...data].sort((a, b) => b.score - a.score).slice(0, 5)
     : [];
-
-  const maxScore = techScores[0]?.score ?? 1;
 
   return (
     <Card>
@@ -47,18 +35,15 @@ export function MyTopTechnologiesWidget() {
           <EmptyState title={t('dashboard.topTechnologies.empty')} />
         ) : (
           <ul className="space-y-3">
-            {techScores.map(({ id, name, score }) => {
-              const pct = Math.round((score / maxScore) * 100);
-              return (
-                <li key={id} className="space-y-1">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="truncate">{name}</span>
-                    <span className="ml-2 tabular-nums text-muted-foreground">{pct}%</span>
-                  </div>
-                  <Progress value={pct} className="h-1.5" />
-                </li>
-              );
-            })}
+            {techScores.map(({ id, name, score }) => (
+              <li key={id} className="space-y-1">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="truncate">{name}</span>
+                  <span className="ml-2 tabular-nums text-muted-foreground">{score}%</span>
+                </div>
+                <Progress value={score} className="h-1.5" />
+              </li>
+            ))}
           </ul>
         )}
       </CardContent>

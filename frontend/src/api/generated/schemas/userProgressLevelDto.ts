@@ -11,5 +11,7 @@ import type { UserProgressTopicDto } from "./userProgressTopicDto";
 export interface UserProgressLevelDto {
   id: string;
   difficulty: UserProgressLevelDtoDifficulty;
+  /** Средний % изученности уровня (0–100) */
+  score: number;
   topics: UserProgressTopicDto[];
 }

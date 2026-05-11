@@ -10,5 +10,7 @@ import type { UserProgressLevelDto } from "./userProgressLevelDto";
 export interface UserProgressTechnologyDto {
   id: string;
   name: string;
+  /** Средний % изученности технологии (0–100) */
+  score: number;
   levels: UserProgressLevelDto[];
 }
